@@ -75,4 +75,12 @@ export default defineConfig([
       'import/no-default-export': 'off',
     },
   },
+  {
+    // Test files inherently exercise specific values (boundary cases, fixture amounts);
+    // hoisting every literal into a named constant adds noise without catching real bugs.
+    files: ['**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
+    rules: {
+      'no-magic-numbers': 'off',
+    },
+  },
 ]);
