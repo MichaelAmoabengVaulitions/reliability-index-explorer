@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
-import { server } from '../test/msw/server';
+import { server } from '../test-utils/msw/server';
 
 import {
   ApiError,

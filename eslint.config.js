@@ -78,7 +78,7 @@ export default defineConfig([
   {
     // Test files inherently exercise specific values (boundary cases, fixture amounts);
     // hoisting every literal into a named constant adds noise without catching real bugs.
-    files: ['**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
+    files: ['**/*.test.{ts,tsx}', 'src/test-utils/**/*.{ts,tsx}'],
     rules: {
       'no-magic-numbers': 'off',
     },
