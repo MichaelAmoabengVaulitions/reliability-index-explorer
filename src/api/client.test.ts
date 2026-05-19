@@ -54,32 +54,34 @@ describe('fetchReliability', () => {
 const window = { userId: 'user_1001', from: '2025-09-01', to: '2026-02-20' };
 
 describe('fetchTransactionPage', () => {
-  it('returns a page object with transactions and next_cursor', async () => {
+  it('returns one page of transactions with the page number, limit, total, and has_more flag', async () => {
     const page = await fetchTransactionPage(window);
     expect(Array.isArray(page.transactions)).toBe(true);
-    expect(page.next_cursor === null || typeof page.next_cursor === 'string').toBe(true);
     expect(page.total).toBe(2000);
+    expect(page.page).toBe(1);
+    expect(page.limit).toBe(500);
+    expect(typeof page.has_more).toBe('boolean');
   });
 
-  it('returns up to 500 records with a non-null next_cursor on the first call', async () => {
+  it('returns up to 500 records on the first call and reports has_more true when more pages remain', async () => {
     const page = await fetchTransactionPage(window);
     expect(page.transactions).toHaveLength(500);
-    expect(page.next_cursor).not.toBeNull();
+    expect(page.has_more).toBe(true);
   });
 
-  it('walks the cursor chain to assemble all 2000 records with no duplicates', async () => {
+  it('walks the pages to assemble all 2000 records with no duplicates', async () => {
     const seen = new Set<string>();
-    let cursor: string | undefined = undefined;
+    let pageNumber = 1;
     let pageCount = 0;
     while (true) {
-      const page = await fetchTransactionPage({ ...window, cursor });
-      for (const tx of page.transactions) {
+      const result = await fetchTransactionPage({ ...window, page: pageNumber });
+      for (const tx of result.transactions) {
         expect(seen.has(tx.id)).toBe(false);
         seen.add(tx.id);
       }
-      pageCount++;
-      if (page.next_cursor === null) break;
-      cursor = page.next_cursor;
+      pageCount += 1;
+      if (!result.has_more) break;
+      pageNumber += 1;
     }
     expect(seen.size).toBe(2000);
     expect(pageCount).toBe(4); // 2000 records at the default limit of 500 is four pages
@@ -133,7 +135,19 @@ describe('fetchAvailableUserIds', () => {
     expect(await fetchAvailableUserIds()).toEqual(['user_2001']);
   });
 
-  it('falls back to the sample user when neither known key is present, so the picker stays usable', async () => {
+  it('also accepts an available_users array, the shape the real backend actually returns', async () => {
+    server.use(
+      http.get(`${config.api.baseUrl}/`, () =>
+        HttpResponse.json({
+          available_users: ['user_1001', 'user_1002', 'user_1003'],
+          name: 'Credit Builder API',
+        }),
+      ),
+    );
+    expect(await fetchAvailableUserIds()).toEqual(['user_1001', 'user_1002', 'user_1003']);
+  });
+
+  it('falls back to the sample user when none of the known keys are present, so the picker stays usable', async () => {
     server.use(
       http.get(`${config.api.baseUrl}/`, () =>
         HttpResponse.json({ endpoints: ['/api/users/:userId/reliability'] }),
