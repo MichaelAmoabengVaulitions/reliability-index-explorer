@@ -1,25 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Transaction } from '@/api/schemas';
+import { buildTransaction } from '@/test/fixtures/transactions';
 
 import { aggregateCashflow } from './cashflow';
-
-function buildTransaction(overrides: Partial<Transaction>): Transaction {
-  return {
-    id: 'tx_test',
-    account_id: 'acc',
-    user_id: 'user_1001',
-    amount: 0,
-    currency: 'EUR',
-    date: '2026-02-15',
-    description: 'test',
-    merchant_category_code: '5814',
-    merchant_name: 'Test',
-    type: 'debit',
-    synced_at: '2026-02-15T10:00:00.000Z',
-    ...overrides,
-  };
-}
 
 describe('aggregateCashflow', () => {
   it('returns an empty array when given no transactions', () => {

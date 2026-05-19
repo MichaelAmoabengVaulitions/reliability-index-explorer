@@ -1,5 +1,24 @@
 import type { Transaction } from '@/api/schemas';
 
+// Returns a single transaction with the overrides merged onto a stable baseline.
+// Useful for tests that need to construct a specific shape without restating every field.
+export function buildTransaction(overrides: Partial<Transaction> = {}): Transaction {
+  return {
+    id: 'tx_test',
+    account_id: 'acc',
+    user_id: 'user_1001',
+    amount: 0,
+    currency: 'EUR',
+    date: '2026-02-15',
+    description: 'test',
+    merchant_category_code: '5814',
+    merchant_name: 'Test',
+    type: 'debit',
+    synced_at: '2026-02-15T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
 const DEFAULTS = {
   userId: 'user_1001',
   from: '2025-09-01',
