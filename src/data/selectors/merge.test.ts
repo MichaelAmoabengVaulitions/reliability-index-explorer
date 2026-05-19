@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { TransactionEvent } from '@/api/schemas';
-import { buildTransaction, buildTransactions } from '@/test/fixtures/transactions';
+import { buildTransaction, buildTransactions } from '@/test-utils/fixtures/transactions';
 
 import { applyTransactionEvent, fromState, toState } from './merge';
 
