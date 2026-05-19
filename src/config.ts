@@ -8,6 +8,11 @@ export const config = {
     baseUrl: 'https://wydokyegph.execute-api.eu-central-1.amazonaws.com',
     transactionPageLimit: 500,
     scoringWindowMonths: 6,
+    // The only user id the OpenAPI spec gives as an example. The user picker
+    // shows this list when the discovery endpoint returns nothing usable, so
+    // the dropdown is never empty. Remove this once we know what the real
+    // discovery endpoint returns.
+    fallbackUserIds: ['user_1001'] as const,
   },
   ui: {
     searchDebounceMs: 200,

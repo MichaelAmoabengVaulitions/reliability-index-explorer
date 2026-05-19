@@ -56,6 +56,19 @@ export const unpaginatedSchema = z.strictObject({
   has_more: z.boolean(),
 });
 
+// The OpenAPI spec calls GET / "API metadata and available endpoints" but
+// does not say what fields it returns. We accept either of the two common
+// names (users or userIds) and let any extra fields through — that is what
+// z.looseObject means, as opposed to z.strictObject which rejects extras.
+// This lets the call keep working even when the real endpoint returns
+// something we did not predict. Once we have hit the real endpoint and
+// know the layout for sure, swap this for z.strictObject and remove the
+// fallback in fetchAvailableUserIds.
+export const discoveryResponseSchema = z.looseObject({
+  users: z.array(z.string()).optional(),
+  userIds: z.array(z.string()).optional(),
+});
+
 // ADDED/UPDATED carry `transaction`; DELETED carries `transaction_id`. Both are
 // optional on the schema since the API never sends both; downstream code reads
 // the one that matches the event type.
@@ -72,3 +85,4 @@ export type CursorPaginatedResponse = z.infer<typeof cursorPaginatedSchema>;
 export type OffsetPaginatedResponse = z.infer<typeof offsetPaginatedSchema>;
 export type UnpaginatedResponse = z.infer<typeof unpaginatedSchema>;
 export type TransactionEvent = z.infer<typeof transactionEventSchema>;
+export type DiscoveryResponse = z.infer<typeof discoveryResponseSchema>;

@@ -1,0 +1,26 @@
+import styles from './Skeleton.module.css';
+
+interface SkeletonProps {
+  /** Height as a CSS length, for example "16px" or "2rem". */
+  height: string;
+  /** Optional width. When left blank, the block fills its parent. */
+  width?: string;
+  /** Screen-reader announcement while the real content is loading. */
+  ariaLabel?: string;
+}
+
+/**
+ * A grey block with a moving highlight, shown while the real content is still
+ * loading. If the visitor's system is set to reduce on-screen motion, the
+ * highlight stops moving and the block stays a flat grey.
+ */
+export function Skeleton({ height, width, ariaLabel = 'Loading' }: SkeletonProps) {
+  return (
+    <span
+      className={styles.skeleton}
+      style={{ height, width }}
+      role="status"
+      aria-label={ariaLabel}
+    />
+  );
+}

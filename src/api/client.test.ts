@@ -1,12 +1,15 @@
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { config } from '@/config';
+
 import { server } from '../test-utils/msw/server';
 
 import {
   ApiError,
   ValidationError,
   fetchAllTransactions,
+  fetchAvailableUserIds,
   fetchReliability,
   fetchTransactionPage,
 } from './client';
@@ -108,5 +111,43 @@ describe('fetchAllTransactions', () => {
       ),
     );
     await expect(fetchAllTransactions(window)).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('fetchAvailableUserIds', () => {
+  it('returns the users array when the discovery response carries that key', async () => {
+    server.use(
+      http.get(`${config.api.baseUrl}/`, () =>
+        HttpResponse.json({ users: ['user_1001', 'user_1002'] }),
+      ),
+    );
+    expect(await fetchAvailableUserIds()).toEqual(['user_1001', 'user_1002']);
+  });
+
+  it('also accepts a userIds array, since the spec does not pin the shape', async () => {
+    server.use(
+      http.get(`${config.api.baseUrl}/`, () =>
+        HttpResponse.json({ userIds: ['user_2001'] }),
+      ),
+    );
+    expect(await fetchAvailableUserIds()).toEqual(['user_2001']);
+  });
+
+  it('falls back to the sample user when neither known key is present, so the picker stays usable', async () => {
+    server.use(
+      http.get(`${config.api.baseUrl}/`, () =>
+        HttpResponse.json({ endpoints: ['/api/users/:userId/reliability'] }),
+      ),
+    );
+    expect(await fetchAvailableUserIds()).toEqual(['user_1001']);
+  });
+
+  it('throws an ApiError when the discovery endpoint itself fails — a network outage is not the same as an unfamiliar shape', async () => {
+    server.use(
+      http.get(`${config.api.baseUrl}/`, () =>
+        HttpResponse.json({ error: 'boom' }, { status: 500 }),
+      ),
+    );
+    await expect(fetchAvailableUserIds()).rejects.toBeInstanceOf(ApiError);
   });
 });

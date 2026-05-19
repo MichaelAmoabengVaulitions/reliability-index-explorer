@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 
 import type { Transaction, TransactionEvent } from '@/api/schemas';
+import { config } from '@/config';
 
 import { buildReliabilityResponse } from '../fixtures/reliability';
 import { buildTransactions } from '../fixtures/transactions';
@@ -12,6 +13,14 @@ const BASE_PATH = '*/api/users/:userId';
 
 interface SseHandlerOptions {
   delayMs?: number;
+}
+
+// Default response for the discovery endpoint — returns the one user id the
+// OpenAPI spec gives as an example. Tests that want to check a different
+// response (the other key name, or the fallback when neither key is present)
+// replace this with their own handler.
+export function discoveryHandler() {
+  return http.get(`${config.api.baseUrl}/`, () => HttpResponse.json({ users: ['user_1001'] }));
 }
 
 export function reliabilityHandler() {
@@ -153,4 +162,9 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export const handlers = [reliabilityHandler(), transactionsHandler(), transactionEventsHandler()];
+export const handlers = [
+  discoveryHandler(),
+  reliabilityHandler(),
+  transactionsHandler(),
+  transactionEventsHandler(),
+];

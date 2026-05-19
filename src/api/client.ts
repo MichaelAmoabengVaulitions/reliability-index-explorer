@@ -7,6 +7,7 @@ import {
   type ReliabilityResponse,
   type Transaction,
   cursorPaginatedSchema,
+  discoveryResponseSchema,
   reliabilityResponseSchema,
 } from './schemas';
 
@@ -128,5 +129,30 @@ export async function fetchAllTransactions({
     onProgress?.(all.length, page.total);
     if (page.next_cursor === null) return all;
     cursor = page.next_cursor;
+  }
+}
+
+// Asks the discovery endpoint which user ids are available. The OpenAPI
+// spec does not say what the response looks like, so we accept either of
+// the two common layouts ('users' or 'userIds'). If the response has
+// neither (or fails validation outright), we return a hard-coded sample
+// list so the dropdown is never empty. Network errors are different: those
+// still get re-thrown to the caller, because an outage is not the same
+// problem as an unexpected response body.
+export async function fetchAvailableUserIds(): Promise<readonly string[]> {
+  try {
+    const discovery = await request('/', discoveryResponseSchema);
+    if (discovery.users !== undefined && discovery.users.length > 0) return discovery.users;
+    if (discovery.userIds !== undefined && discovery.userIds.length > 0) return discovery.userIds;
+    return config.api.fallbackUserIds;
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      console.warn(
+        'Discovery response did not match the expected layout; falling back to the sample list.',
+        error,
+      );
+      return config.api.fallbackUserIds;
+    }
+    throw error;
   }
 }
