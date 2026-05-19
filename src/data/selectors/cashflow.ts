@@ -1,0 +1,77 @@
+import type { Transaction } from '@/api/schemas';
+import { formatMonth, monthKey, parseISODate } from '@/domain/dates';
+
+export interface MonthlyCashflow {
+  monthKey: string;
+  label: string;
+  inflow: number;
+  outflow: number;
+  net: number;
+}
+
+interface AggregateCashflowOptions {
+  from?: string;
+  to?: string;
+}
+
+interface MonthBucket {
+  inflow: number;
+  outflow: number;
+}
+
+// Turns a list of transactions into one entry per calendar month, sorted oldest first.
+// The input may arrive in any order (the API explicitly does not promise chronological order)
+// so we bucket by month key and sort the result at the end.
+// When `from` and `to` are provided we also fill in any months in that window that have no
+// transactions, so a chart bound to the result has no gaps along its time axis.
+export function aggregateCashflow(
+  transactions: Transaction[],
+  options: AggregateCashflowOptions = {},
+): MonthlyCashflow[] {
+  const buckets = new Map<string, MonthBucket>();
+
+  for (const tx of transactions) {
+    const key = monthKey(parseISODate(tx.date));
+    const bucket = buckets.get(key) ?? { inflow: 0, outflow: 0 };
+    if (tx.amount > 0) {
+      bucket.inflow += tx.amount;
+    } else if (tx.amount < 0) {
+      bucket.outflow += -tx.amount;
+    }
+    buckets.set(key, bucket);
+  }
+
+  if (options.from !== undefined && options.to !== undefined) {
+    for (const monthFirst of listMonthsBetween(options.from, options.to)) {
+      const key = monthKey(monthFirst);
+      if (!buckets.has(key)) {
+        buckets.set(key, { inflow: 0, outflow: 0 });
+      }
+    }
+  }
+
+  return [...buckets.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, { inflow, outflow }]) => ({
+      monthKey: key,
+      label: formatMonth(parseISODate(`${key}-01`)),
+      inflow,
+      outflow,
+      net: inflow - outflow,
+    }));
+}
+
+// Yields a Date for the first of every calendar month that overlaps [from, to].
+// Lives next to aggregateCashflow because this is the only caller right now.
+// If a second caller appears it should be lifted into src/domain/dates.ts.
+function listMonthsBetween(fromIso: string, toIso: string): Date[] {
+  const result: Date[] = [];
+  const from = parseISODate(fromIso);
+  const to = parseISODate(toIso);
+  const cursor = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), 1));
+  while (cursor <= to) {
+    result.push(new Date(cursor.getTime()));
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  return result;
+}

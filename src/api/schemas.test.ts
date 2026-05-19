@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  reliabilityResponseSchema,
-  transactionEventSchema,
-  transactionSchema,
-} from './schemas';
+import { reliabilityResponseSchema, transactionEventSchema, transactionSchema } from './schemas';
 
 const validTransaction = {
   id: 'tx_0001',
