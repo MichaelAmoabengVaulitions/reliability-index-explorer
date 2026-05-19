@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest';
 
 import { server } from '../test/msw/server';
 
-import { ApiError, ValidationError, fetchReliability } from './client';
+import {
+  ApiError,
+  ValidationError,
+  fetchAllTransactions,
+  fetchReliability,
+  fetchTransactionPage,
+} from './client';
 
 describe('fetchReliability', () => {
   it('resolves with a parsed reliability response on success', async () => {
@@ -35,9 +41,72 @@ describe('fetchReliability', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(ValidationError);
       if (error instanceof ValidationError) {
-        // any of the required fields would do; one is enough to prove validation ran
+        // Any of the required fields would do; finding one in the message proves validation ran.
         expect(error.message).toMatch(/user_id|reliability_index|score_band/);
       }
     }
+  });
+});
+
+const window = { userId: 'user_1001', from: '2025-09-01', to: '2026-02-20' };
+
+describe('fetchTransactionPage', () => {
+  it('returns a page object with transactions and next_cursor', async () => {
+    const page = await fetchTransactionPage(window);
+    expect(Array.isArray(page.transactions)).toBe(true);
+    expect(page.next_cursor === null || typeof page.next_cursor === 'string').toBe(true);
+    expect(page.total).toBe(2000);
+  });
+
+  it('returns up to 500 records with a non-null next_cursor on the first call', async () => {
+    const page = await fetchTransactionPage(window);
+    expect(page.transactions).toHaveLength(500);
+    expect(page.next_cursor).not.toBeNull();
+  });
+
+  it('walks the cursor chain to assemble all 2000 records with no duplicates', async () => {
+    const seen = new Set<string>();
+    let cursor: string | undefined = undefined;
+    let pageCount = 0;
+    while (true) {
+      const page = await fetchTransactionPage({ ...window, cursor });
+      for (const tx of page.transactions) {
+        expect(seen.has(tx.id)).toBe(false);
+        seen.add(tx.id);
+      }
+      pageCount++;
+      if (page.next_cursor === null) break;
+      cursor = page.next_cursor;
+    }
+    expect(seen.size).toBe(2000);
+    expect(pageCount).toBe(4); // 2000 records at the default limit of 500 is four pages
+  });
+});
+
+describe('fetchAllTransactions', () => {
+  it('returns one flat array containing every transaction with no duplicates', async () => {
+    const all = await fetchAllTransactions(window);
+    expect(all).toHaveLength(2000);
+    expect(new Set(all.map((tx) => tx.id)).size).toBe(2000);
+  });
+
+  it('calls onProgress after every page with the running totals', async () => {
+    const calls: Array<[number, number]> = [];
+    await fetchAllTransactions({
+      ...window,
+      onProgress: (loaded, total) => calls.push([loaded, total]),
+    });
+    expect(calls).toHaveLength(4);
+    expect(calls[0]).toEqual([500, 2000]);
+    expect(calls[3]).toEqual([2000, 2000]);
+  });
+
+  it('rejects when any page fails', async () => {
+    server.use(
+      http.get('*/api/users/:userId/transactions', () =>
+        HttpResponse.json({ error: 'boom' }, { status: 500 }),
+      ),
+    );
+    await expect(fetchAllTransactions(window)).rejects.toBeInstanceOf(ApiError);
   });
 });
