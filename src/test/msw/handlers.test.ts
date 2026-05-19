@@ -18,6 +18,11 @@ describe('reliability handler', () => {
     const data = await response.json();
     expect(data.error).toBeTruthy();
   });
+
+  it('returns 400 when from is present but empty', async () => {
+    const response = await fetch(`${userPath('user_1001')}/reliability?from=`);
+    expect(response.status).toBe(400);
+  });
 });
 
 describe('transactions handler', () => {

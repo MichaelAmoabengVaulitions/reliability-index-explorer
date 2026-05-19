@@ -16,7 +16,8 @@ interface SseHandlerOptions {
 export function reliabilityHandler() {
   return http.get(`${BASE_PATH}/reliability`, ({ request }) => {
     const url = new URL(request.url);
-    if (!url.searchParams.has('from')) {
+    // treat empty value the same as missing — both are invalid
+    if (!url.searchParams.get('from')) {
       return HttpResponse.json({ error: 'from is required' }, { status: 400 });
     }
     return HttpResponse.json(buildReliabilityResponse());

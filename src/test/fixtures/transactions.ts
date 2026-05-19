@@ -43,8 +43,10 @@ const MERCHANT_TEMPLATES: readonly MerchantTemplate[] = [
   { category: '5732', name: 'Electronics Store', description: 'Misc purchase', minAmount: -500, maxAmount: -50 },
 ];
 
-// Mulberry32 — small, deterministic 32-bit PRNG. Same seed yields the same sequence.
-function mulberry32(seed: number): () => number {
+// Returns a function that yields the next pseudo-random number in [0, 1) on each call.
+// Same seed always produces the same sequence — that's what makes fixture output reproducible.
+// Implementation: Mulberry32, a 32-bit PRNG (small, fast, non-cryptographic).
+function createSeededRng(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
     state = (state + 0x6d2b79f5) >>> 0;
@@ -55,8 +57,10 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-// FNV-1a — small string hash so options deterministically derive a unique PRNG seed.
-function fnv1a(input: string): number {
+// Hashes a string into a 32-bit unsigned integer so different option combinations
+// deterministically map to different RNG seeds.
+// Implementation: FNV-1a (small, fast, non-cryptographic).
+function hashString(input: string): number {
   let hash = 2166136261;
   for (let i = 0; i < input.length; i++) {
     hash ^= input.charCodeAt(i);
@@ -181,8 +185,8 @@ export function buildTransactions(
   const from = options.from ?? DEFAULTS.from;
   const to = options.to ?? DEFAULTS.to;
 
-  const seed = fnv1a(`${userId}|${from}|${to}`);
-  const rng = mulberry32(seed);
+  const seed = hashString(`${userId}|${from}|${to}`);
+  const rng = createSeededRng(seed);
 
   const fromDate = parseDate(from);
   const toDate = parseDate(to);
