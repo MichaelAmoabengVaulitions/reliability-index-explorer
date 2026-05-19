@@ -1,5 +1,3 @@
-import styles from './ErrorState.module.css';
-
 interface ErrorStateProps {
   title: string;
   description?: string;
@@ -21,11 +19,20 @@ export function ErrorState({
   retryLabel = 'Try again',
 }: ErrorStateProps) {
   return (
-    <div className={styles.error} role="alert">
-      <p className={styles.title}>{title}</p>
-      {description !== undefined && <p className={styles.description}>{description}</p>}
+    <div
+      role="alert"
+      className="flex flex-col items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-900"
+    >
+      <p className="m-0 text-base font-semibold">{title}</p>
+      {description !== undefined && (
+        <p className="m-0 text-sm text-red-800">{description}</p>
+      )}
       {onRetry !== undefined && (
-        <button type="button" className={styles.retry} onClick={onRetry}>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="self-start rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+        >
           {retryLabel}
         </button>
       )}

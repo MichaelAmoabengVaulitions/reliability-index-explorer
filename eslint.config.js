@@ -70,7 +70,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/routes/**/*.{ts,tsx}', 'src/main.tsx', 'vite.config.ts'],
+    files: ['src/routes/**/*.{ts,tsx}', 'src/main.tsx', 'vite.config.ts', 'tailwind.config.ts'],
     rules: {
       'import/no-default-export': 'off',
     },

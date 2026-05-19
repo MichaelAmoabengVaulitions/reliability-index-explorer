@@ -1,13 +1,13 @@
 import { type ReactNode } from 'react';
 
-import styles from './Card.module.css';
-
 interface CardProps {
   title?: string;
   actions?: ReactNode;
   children: ReactNode;
   /** Screen-reader name for the card. Use this when no visible title is shown. */
   ariaLabel?: string;
+  /** Extra Tailwind classes to merge onto the outer container, for layout overrides. */
+  className?: string;
 }
 
 /**
@@ -15,16 +15,28 @@ interface CardProps {
  * on the right) and a body that holds whatever children you pass in. Used
  * wherever a feature needs its own framed area on the dashboard.
  */
-export function Card({ title, actions, children, ariaLabel }: CardProps) {
+export function Card({ title, actions, children, ariaLabel, className }: CardProps) {
   return (
-    <section className={styles.card} aria-label={ariaLabel ?? title}>
+    <section
+      aria-label={ariaLabel ?? title}
+      className={[
+        'flex flex-col min-w-0 rounded-xl border border-slate-200 bg-white p-6 shadow-card',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       {(title !== undefined || actions !== undefined) && (
-        <header className={styles.header}>
-          {title !== undefined && <h2 className={styles.title}>{title}</h2>}
-          {actions !== undefined && <div className={styles.actions}>{actions}</div>}
+        <header className="mb-4 flex items-center justify-between gap-3">
+          {title !== undefined && (
+            <h2 className="m-0 text-base font-semibold text-slate-900">{title}</h2>
+          )}
+          {actions !== undefined && (
+            <div className="flex items-center gap-2">{actions}</div>
+          )}
         </header>
       )}
-      <div className={styles.body}>{children}</div>
+      <div className="min-w-0 flex-1">{children}</div>
     </section>
   );
 }
