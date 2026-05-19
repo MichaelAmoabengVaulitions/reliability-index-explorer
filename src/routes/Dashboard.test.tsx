@@ -1,6 +1,7 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { useFilters } from '@/store/filters';
 import { useSelectedUser } from '@/store/selectedUser';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';
 
@@ -8,19 +9,24 @@ import { Dashboard } from './Dashboard';
 
 afterEach(() => {
   useSelectedUser.getState().setUserId('');
+  useFilters.getState().reset();
 });
 
 describe('Dashboard', () => {
-  it('renders one placeholder card per planned feature', () => {
+  it('mounts every feature card for the picked user', async () => {
     renderWithProviders(<Dashboard />, {
       path: '/users/:userId',
       initialEntries: ['/users/user_1001'],
     });
-    expect(screen.getByRole('heading', { name: 'Reliability Overview' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Score Breakdown' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Score Drivers' })).toBeInTheDocument();
+    await waitFor(
+      () => {
+        expect(screen.getByRole('heading', { name: 'Reliability Overview' })).toBeInTheDocument();
+      },
+      { timeout: 4000 },
+    );
     expect(screen.getByRole('heading', { name: 'Monthly Cashflow' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Transactions' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Score Explanation' })).toBeInTheDocument();
   });
 
   it('mirrors the userId from the URL into the selected-user store', () => {
