@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { config } from '@/config';
 import { todayAsIsoDate } from '@/domain/dates';
+import { ROUTER_FUTURE_FLAGS } from '@/routerFutureFlags';
 
 import { useFilters } from './filters';
 import { useSelectedUser } from './selectedUser';
@@ -17,7 +18,7 @@ function TestHarness() {
 
 function renderWithRouter(initialUrl: string) {
   return render(
-    <MemoryRouter initialEntries={[initialUrl]}>
+    <MemoryRouter initialEntries={[initialUrl]} future={ROUTER_FUTURE_FLAGS}>
       <TestHarness />
     </MemoryRouter>,
   );
@@ -35,11 +36,6 @@ afterEach(() => {
 });
 
 describe('useUrlSync — hydration on mount', () => {
-  it('reads userId from the URL and pushes it into the selected-user store', () => {
-    renderWithRouter('/?userId=user_1001');
-    expect(useSelectedUser.getState().userId).toBe('user_1001');
-  });
-
   it('reads the from date from the URL and pushes it into the selected-user store', () => {
     renderWithRouter('/?from=2026-02-20');
     expect(useSelectedUser.getState().from).toBe('2026-02-20');

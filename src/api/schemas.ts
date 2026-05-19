@@ -41,12 +41,15 @@ export const cursorPaginatedSchema = z.strictObject({
   total: z.number().int(),
 });
 
+// The live backend returns transactions in this shape today. total_pages is
+// optional because the real server does not always include it — we walk by
+// has_more instead so total_pages going missing does not break the client.
 export const offsetPaginatedSchema = z.strictObject({
   transactions: z.array(transactionSchema),
   total: z.number().int(),
   page: z.number().int(),
   limit: z.number().int(),
-  total_pages: z.number().int(),
+  total_pages: z.number().int().optional(),
   has_more: z.boolean(),
 });
 
@@ -54,6 +57,19 @@ export const unpaginatedSchema = z.strictObject({
   transactions: z.array(transactionSchema),
   total: z.number().int(),
   has_more: z.boolean(),
+});
+
+// The OpenAPI spec calls GET / "API metadata and available endpoints" but
+// does not say what fields it returns. The real backend uses available_users
+// today; we also accept the two common alternatives (users, userIds) so
+// teammates testing against a different mock or a future rename are not
+// stuck. Extra fields like "name" or "endpoints" are allowed through —
+// that is what z.looseObject means, as opposed to z.strictObject which
+// would reject them.
+export const discoveryResponseSchema = z.looseObject({
+  available_users: z.array(z.string()).optional(),
+  users: z.array(z.string()).optional(),
+  userIds: z.array(z.string()).optional(),
 });
 
 // ADDED/UPDATED carry `transaction`; DELETED carries `transaction_id`. Both are
@@ -72,3 +88,4 @@ export type CursorPaginatedResponse = z.infer<typeof cursorPaginatedSchema>;
 export type OffsetPaginatedResponse = z.infer<typeof offsetPaginatedSchema>;
 export type UnpaginatedResponse = z.infer<typeof unpaginatedSchema>;
 export type TransactionEvent = z.infer<typeof transactionEventSchema>;
+export type DiscoveryResponse = z.infer<typeof discoveryResponseSchema>;

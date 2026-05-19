@@ -42,6 +42,9 @@ export function useTransactions(
 
   return useQuery<TransactionsQueryData, Error>({
     queryKey,
+    // Skip the fetch when there is no user or no window date yet, so we do
+    // not hit "/api/users//transactions" while the URL or store is hydrating.
+    enabled: userId.length > 0 && from.length > 0 && to.length > 0,
     queryFn: async () => {
       const transactions = await fetchAllTransactions({
         userId,

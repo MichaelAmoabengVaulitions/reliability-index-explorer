@@ -3,10 +3,11 @@ import type { z } from 'zod';
 import { config } from '@/config';
 
 import {
-  type CursorPaginatedResponse,
+  type OffsetPaginatedResponse,
   type ReliabilityResponse,
   type Transaction,
-  cursorPaginatedSchema,
+  discoveryResponseSchema,
+  offsetPaginatedSchema,
   reliabilityResponseSchema,
 } from './schemas';
 
@@ -87,21 +88,29 @@ interface FetchTransactionPageOptions {
   userId: string;
   from: string;
   to: string;
-  cursor?: string;
+  page?: number;
   limit?: number;
 }
 
-// We always send a cursor (an empty string on the first call) so the server treats the
-// request as cursor-mode pagination rather than falling through to its unpaginated branch.
+const FIRST_PAGE = 1;
+
+// Asks the backend for one page of transactions using page-and-limit
+// pagination. The real backend returns offset-paginated responses with a
+// has_more flag, so we always pass both page and limit on every call.
 export function fetchTransactionPage({
   userId,
   from,
   to,
-  cursor = '',
+  page = FIRST_PAGE,
   limit = config.api.transactionPageLimit,
-}: FetchTransactionPageOptions): Promise<CursorPaginatedResponse> {
-  const search = new URLSearchParams({ from, to, limit: String(limit), cursor });
-  return request(`/api/users/${userId}/transactions?${search.toString()}`, cursorPaginatedSchema);
+}: FetchTransactionPageOptions): Promise<OffsetPaginatedResponse> {
+  const search = new URLSearchParams({
+    from,
+    to,
+    page: String(page),
+    limit: String(limit),
+  });
+  return request(`/api/users/${userId}/transactions?${search.toString()}`, offsetPaginatedSchema);
 }
 
 interface FetchAllTransactionsOptions {
@@ -111,9 +120,11 @@ interface FetchAllTransactionsOptions {
   onProgress?: (loaded: number, total: number) => void;
 }
 
-// Walks the cursor chain starting from the first page and accumulates everything into a
-// single flat array. The optional onProgress callback fires once per page, giving callers
-// enough information to render a "loaded N of M" indicator while the load is in flight.
+// Asks the backend for one page at a time and stitches the results into one
+// flat array. The optional onProgress callback fires once after every page,
+// so the UI can render a "loaded N of M" indicator while the load is still
+// in flight. We stop when the server tells us there is no more data with
+// has_more === false.
 export async function fetchAllTransactions({
   userId,
   from,
@@ -121,12 +132,40 @@ export async function fetchAllTransactions({
   onProgress,
 }: FetchAllTransactionsOptions): Promise<Transaction[]> {
   const all: Transaction[] = [];
-  let cursor: string | undefined;
+  let page = FIRST_PAGE;
   while (true) {
-    const page = await fetchTransactionPage({ userId, from, to, cursor });
-    all.push(...page.transactions);
-    onProgress?.(all.length, page.total);
-    if (page.next_cursor === null) return all;
-    cursor = page.next_cursor;
+    const result = await fetchTransactionPage({ userId, from, to, page });
+    all.push(...result.transactions);
+    onProgress?.(all.length, result.total);
+    if (!result.has_more) return all;
+    page += 1;
+  }
+}
+
+// Asks the discovery endpoint which user ids are available. The OpenAPI
+// spec does not say what the response looks like, so we accept either of
+// the two common layouts ('users' or 'userIds'). If the response has
+// neither (or fails validation outright), we return a hard-coded sample
+// list so the dropdown is never empty. Network errors are different: those
+// still get re-thrown to the caller, because an outage is not the same
+// problem as an unexpected response body.
+export async function fetchAvailableUserIds(): Promise<readonly string[]> {
+  try {
+    const discovery = await request('/', discoveryResponseSchema);
+    if (discovery.available_users !== undefined && discovery.available_users.length > 0) {
+      return discovery.available_users;
+    }
+    if (discovery.users !== undefined && discovery.users.length > 0) return discovery.users;
+    if (discovery.userIds !== undefined && discovery.userIds.length > 0) return discovery.userIds;
+    return config.api.fallbackUserIds;
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      console.warn(
+        'Discovery response did not match the expected layout; falling back to the sample list.',
+        error,
+      );
+      return config.api.fallbackUserIds;
+    }
+    throw error;
   }
 }

@@ -13,11 +13,15 @@ import { useFilters } from './filters';
 import { useSelectedUser } from './selectedUser';
 
 /**
- * Names of the URL search params we read and write. Centralised so renaming
- * one updates both the hydration and the writeback code paths.
+ * The query-string keys we read from and write back to the URL (the part
+ * after the ? in the address bar). Listed here in one place so renaming a
+ * key updates both the reading and the writing code at once.
+ *
+ * The selected user id is deliberately not in this list. It lives in the
+ * URL path as /users/:userId so it stays part of the address itself, rather
+ * than being treated as just another filter.
  */
 const URL_PARAMS = {
-  userId: 'userId',
   from: 'from',
   categories: 'categories',
   sign: 'sign',
@@ -42,9 +46,6 @@ function parseSort(raw: string): TransactionSort | null {
 }
 
 function hydrateStoresFromParams(params: URLSearchParams): void {
-  const userId = params.get(URL_PARAMS.userId);
-  if (userId !== null) useSelectedUser.getState().setUserId(userId);
-
   const from = params.get(URL_PARAMS.from);
   if (from !== null) useSelectedUser.getState().setFrom(from);
 
@@ -67,10 +68,9 @@ function hydrateStoresFromParams(params: URLSearchParams): void {
 }
 
 function serializeStoresToParams(): URLSearchParams {
-  const { userId, from } = useSelectedUser.getState();
+  const { from } = useSelectedUser.getState();
   const { categoryCodes, sign, search, sort } = useFilters.getState();
   const params = new URLSearchParams();
-  if (userId.length > 0) params.set(URL_PARAMS.userId, userId);
   if (from.length > 0) params.set(URL_PARAMS.from, from);
   if (categoryCodes.length > 0) params.set(URL_PARAMS.categories, categoryCodes.join(','));
   if (sign !== 'all') params.set(URL_PARAMS.sign, sign);
@@ -82,16 +82,19 @@ function serializeStoresToParams(): URLSearchParams {
 }
 
 /**
- * Keeps the URL search params in sync with the filter and selected-user stores.
+ * Keeps the URL's query string in step with the filter and selected-user
+ * stores.
  *
- * On mount, reads the URL and hydrates the stores. From then on, any store
- * change triggers a debounced replaceState back into the URL — debounced so
- * each keystroke in the search box doesn't push a new history entry.
+ * On first run, we read the URL once and copy its values into the stores.
+ * After that, whenever a store changes we wait a short moment (so a burst
+ * of keystrokes counts as one change) and then rewrite the URL. We replace
+ * the current history entry rather than push a new one, so each keystroke
+ * does not add a step to the browser's back button.
  */
 export function useUrlSync(): void {
   const [initialParams, setSearchParams] = useSearchParams();
-  // Capture the params from the first render so the hydration effect can use them
-  // without retriggering on every subsequent URL change.
+  // Save the URL values from the first render. The setup below reads that
+  // saved snapshot once, instead of re-running every time the URL changes.
   const initialParamsRef = useRef(initialParams);
 
   useEffect(() => {

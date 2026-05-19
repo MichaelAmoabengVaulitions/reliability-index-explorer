@@ -19,5 +19,8 @@ export function useReliability(
   return useQuery<ReliabilityResponse, Error>({
     queryKey: queryKeys.reliability(userId, from),
     queryFn: () => fetchReliability(userId, from),
+    // Skip the fetch when there is no user or no window date yet, so we do
+    // not hit "/api/users//reliability" while the URL or store is hydrating.
+    enabled: userId.length > 0 && from.length > 0,
   });
 }
