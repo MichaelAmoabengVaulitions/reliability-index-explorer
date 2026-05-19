@@ -7,6 +7,7 @@ export const config = {
   api: {
     baseUrl: 'https://wydokyegph.execute-api.eu-central-1.amazonaws.com',
     transactionPageLimit: 500,
+    scoringWindowMonths: 6,
   },
   ui: {
     searchDebounceMs: 200,
