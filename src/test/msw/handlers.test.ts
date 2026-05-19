@@ -36,12 +36,21 @@ describe('transactions handler', () => {
     expect(data.has_more).toBe(false);
   });
 
-  it('returns up to 200 records and a non-null next_cursor in cursor mode', async () => {
+  it('returns up to 200 records and a non-null next_cursor in cursor mode by default', async () => {
     const response = await fetch(
       `${userPath('user_1001')}/transactions?from=2025-09-01&to=2026-02-20&cursor=`,
     );
     const data = await response.json();
     expect(data.transactions).toHaveLength(200);
+    expect(data.next_cursor).not.toBeNull();
+  });
+
+  it('respects the limit query param in cursor mode (up to the 500 maximum)', async () => {
+    const response = await fetch(
+      `${userPath('user_1001')}/transactions?from=2025-09-01&to=2026-02-20&cursor=&limit=500`,
+    );
+    const data = await response.json();
+    expect(data.transactions).toHaveLength(500);
     expect(data.next_cursor).not.toBeNull();
   });
 
@@ -62,7 +71,7 @@ describe('transactions handler', () => {
       pages++;
     }
     expect(seenIds.size).toBe(2000);
-    expect(pages).toBe(10);
+    expect(pages).toBe(10); // default page size of 200 → 10 pages for 2000 records
   });
 
   it('returns the requested slice in offset/limit mode', async () => {

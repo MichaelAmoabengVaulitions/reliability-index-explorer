@@ -6,7 +6,8 @@ import { buildReliabilityResponse } from '../fixtures/reliability';
 import { buildTransactions } from '../fixtures/transactions';
 
 const FIXTURE_TRANSACTION_COUNT = 2000;
-const CURSOR_PAGE_SIZE = 200;
+const DEFAULT_PAGE_SIZE = 200;
+const MAX_PAGE_SIZE = 500;
 const BASE_PATH = '*/api/users/:userId';
 
 interface SseHandlerOptions {
@@ -37,7 +38,8 @@ export function transactionsHandler() {
     const all = buildTransactions(FIXTURE_TRANSACTION_COUNT, { userId, from, to });
 
     if (cursor !== null) {
-      return cursorPagedResponse(all, cursor);
+      const limit = resolvePageSize(limitStr);
+      return cursorPagedResponse(all, cursor, limit);
     }
     if (pageStr !== null && limitStr !== null) {
       return offsetPagedResponse(all, Number(pageStr), Number(limitStr));
@@ -46,13 +48,22 @@ export function transactionsHandler() {
   });
 }
 
-function cursorPagedResponse(all: Transaction[], cursor: string): Response {
+// We cap at the OpenAPI maximum so a client cannot ask the mock to return more than
+// the real API would, even by mistake.
+function resolvePageSize(limitParam: string | null): number {
+  if (limitParam === null) return DEFAULT_PAGE_SIZE;
+  const parsed = Number(limitParam);
+  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_PAGE_SIZE;
+  return Math.min(parsed, MAX_PAGE_SIZE);
+}
+
+function cursorPagedResponse(all: Transaction[], cursor: string, limit: number): Response {
   let startIndex = 0;
   if (cursor !== '') {
     const found = all.findIndex((tx) => tx.id === cursor);
     startIndex = found === -1 ? 0 : found + 1;
   }
-  const slice = all.slice(startIndex, startIndex + CURSOR_PAGE_SIZE);
+  const slice = all.slice(startIndex, startIndex + limit);
   const lastTx = slice[slice.length - 1];
   const hasMore = startIndex + slice.length < all.length;
   const nextCursor = hasMore && lastTx ? lastTx.id : null;
@@ -99,7 +110,7 @@ export function transactionEventsHandler(options: SseHandlerOptions = {}) {
           if (delayMs > 0 && i > 0) {
             await sleep(delayMs);
           }
-          // index in-bounds by the for-loop condition.
+          // The for-loop condition already guarantees that i is a valid index, so reading events[i] is safe.
           const event = events[i]!;
           controller.enqueue(encoder.encode(formatSseFrame(i + 1, event)));
         }
