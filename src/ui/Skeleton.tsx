@@ -1,5 +1,3 @@
-import styles from './Skeleton.module.css';
-
 interface SkeletonProps {
   /** Height as a CSS length, for example "16px" or "2rem". */
   height: string;
@@ -17,10 +15,10 @@ interface SkeletonProps {
 export function Skeleton({ height, width, ariaLabel = 'Loading' }: SkeletonProps) {
   return (
     <span
-      className={styles.skeleton}
-      style={{ height, width }}
       role="status"
       aria-label={ariaLabel}
+      className="block w-full animate-pulse rounded-md bg-slate-200 motion-reduce:animate-none"
+      style={{ height, width }}
     />
   );
 }

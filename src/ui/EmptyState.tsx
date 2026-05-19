@@ -1,7 +1,5 @@
 import { type ReactNode } from 'react';
 
-import styles from './EmptyState.module.css';
-
 interface EmptyStateProps {
   /** Optional emoji or icon. It is decoration only — screen readers skip it. */
   icon?: ReactNode;
@@ -18,15 +16,17 @@ interface EmptyStateProps {
  */
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className={styles.empty}>
+    <div className="flex flex-col items-center justify-center px-4 py-8 text-center text-slate-500">
       {icon !== undefined && (
-        <span className={styles.icon} aria-hidden="true">
+        <span aria-hidden="true" className="mb-3 text-3xl leading-none">
           {icon}
         </span>
       )}
-      <p className={styles.title}>{title}</p>
-      {description !== undefined && <p className={styles.description}>{description}</p>}
-      {action !== undefined && <div className={styles.action}>{action}</div>}
+      <p className="m-0 mb-1 text-base font-semibold text-slate-900">{title}</p>
+      {description !== undefined && (
+        <p className="m-0 mb-4 max-w-[36ch] text-sm">{description}</p>
+      )}
+      {action !== undefined && <div className="mt-1">{action}</div>}
     </div>
   );
 }

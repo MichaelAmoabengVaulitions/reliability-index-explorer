@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
+import { ChevronDown } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+
 import { fetchAvailableUserIds } from '@/api/client';
-import styles from './UserPicker.module.css';
 
 const DISCOVERY_QUERY_KEY = ['discovery', 'userIds'] as const;
 
@@ -22,33 +23,39 @@ export function UserPicker() {
   });
 
   if (isLoading) {
-    return <span className={styles.status}>Loading users…</span>;
+    return <p className="px-3 text-sm text-sidebar-muted">Loading users…</p>;
   }
   if (error !== null) {
     return (
-      <span className={styles.status} role="alert">
+      <p role="alert" className="px-3 text-sm text-red-300">
         Could not load users
-      </span>
+      </p>
     );
   }
 
   return (
-    <label className={styles.picker}>
-      <span className={styles.visuallyHidden}>Select a user</span>
-      <select
-        className={styles.select}
-        value={currentUserId ?? ''}
-        onChange={(event) => navigate(`/users/${event.target.value}`)}
-      >
-        <option value="" disabled>
-          Choose a user…
-        </option>
-        {data?.map((id) => (
-          <option key={id} value={id}>
-            {id}
+    <label className="block">
+      <span className="sr-only">Select a user</span>
+      <span className="relative block">
+        <select
+          value={currentUserId ?? ''}
+          onChange={(event) => navigate(`/users/${event.target.value}`)}
+          className="block w-full appearance-none rounded-md border border-sidebar-border bg-sidebar-hover px-3 py-2 pr-9 text-sm text-white shadow-sm focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+        >
+          <option value="" disabled>
+            Choose a user…
           </option>
-        ))}
-      </select>
+          {data?.map((id) => (
+            <option key={id} value={id} className="bg-slate-900 text-white">
+              {id}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          aria-hidden="true"
+          className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-sidebar-muted"
+        />
+      </span>
     </label>
   );
 }
