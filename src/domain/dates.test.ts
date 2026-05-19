@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { formatMonth, monthKey, parseISODate, windowFor } from './dates';
+import { formatMonth, monthKey, parseISODate, todayAsIsoDate, windowFor } from './dates';
 
 describe('parseISODate', () => {
   it('parses a YYYY-MM-DD string as midnight UTC on that day', () => {
@@ -32,5 +32,27 @@ describe('windowFor', () => {
 
   it('handles the year boundary correctly', () => {
     expect(windowFor('2026-01-01')).toEqual({ start: '2025-08-01', end: '2026-01-01' });
+  });
+});
+
+describe('todayAsIsoDate', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("returns today's UTC date as YYYY-MM-DD", () => {
+    vi.setSystemTime(new Date('2026-05-19T14:30:00.000Z'));
+    expect(todayAsIsoDate()).toBe('2026-05-19');
+  });
+
+  it('uses the UTC calendar day even when local time is on the previous day', () => {
+    // 2026-05-20 00:30 UTC is still 2026-05-19 in any negative-offset timezone, but the
+    // store and the backend both speak UTC, so we always return the UTC calendar day.
+    vi.setSystemTime(new Date('2026-05-20T00:30:00.000Z'));
+    expect(todayAsIsoDate()).toBe('2026-05-20');
   });
 });
