@@ -46,3 +46,9 @@ function formatISODate(date: Date): string {
   const day = String(date.getUTCDate()).padStart(2, '0');
   return `${monthKey(date)}-${day}`;
 }
+
+// Today's UTC calendar day as YYYY-MM-DD. Backend and store both speak UTC, so we
+// never want to fall back to the viewer's local timezone here.
+export function todayAsIsoDate(): string {
+  return formatISODate(new Date());
+}
