@@ -5,7 +5,7 @@ import { API_BASE_URL } from '@/api/client';
 import { transactionEventSchema, type TransactionEvent } from '@/api/schemas';
 
 import { queryKeys } from './queryKeys';
-import { applyTransactionEvent } from './selectors/merge';
+import { applyTransactionEvent } from './transactionState';
 import { type TransactionsQueryData } from './useTransactions';
 
 /**

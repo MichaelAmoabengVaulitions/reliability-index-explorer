@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildTransaction } from '@/test-utils/fixtures/transactions';
 
-import { aggregateCashflow } from './cashflow';
+import { aggregateCashflow } from './aggregateCashflow';
 
 describe('aggregateCashflow', () => {
   it('returns an empty array when given no transactions', () => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildTransaction } from '@/test-utils/fixtures/transactions';
 
-import { applyTransactionFilters } from './transactions';
+import { applyTransactionFilters } from './filterTransactions';
 
 const sample = [
   buildTransaction({

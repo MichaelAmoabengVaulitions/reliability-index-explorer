@@ -2,14 +2,14 @@ import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { config } from '@/config';
-import type {
-  SortDirection,
-  SortField,
-  TransactionSign,
-  TransactionSort,
-} from '@/data/selectors/transactions';
 
-import { useFilters } from './filters';
+import {
+  useFilters,
+  type SortDirection,
+  type SortField,
+  type TransactionSign,
+  type TransactionSort,
+} from './filters';
 import { useSelectedUser } from './selectedUser';
 
 /**

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-q
 import { fetchAllTransactions } from '@/api/client';
 
 import { queryKeys } from './queryKeys';
-import { toState, type TransactionState } from './selectors/merge';
+import { toState, type TransactionState } from './transactionState';
 
 /**
  * What useTransactions stores in the React Query cache while loading and once done.

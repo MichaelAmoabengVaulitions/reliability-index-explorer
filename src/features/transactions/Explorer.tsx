@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 
-import { fromState } from '@/data/selectors/merge';
-import { applyTransactionFilters } from '@/data/selectors/transactions';
+import { fromState } from '@/data/transactionState';
 import {
   type StreamStatus,
   useTransactionEventStream,
@@ -16,6 +15,7 @@ import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
 
 import { Filters } from './Filters';
+import { applyTransactionFilters } from './filterTransactions';
 import { VirtualTable } from './VirtualTable';
 
 const LOADING_ROW_COUNT = 8;
@@ -56,8 +56,8 @@ function LiveBadge({ status }: { status: StreamStatus }) {
  *
  * Composes the toolbar (Filters), the virtualised list (VirtualTable), and a
  * count footer. All filtering and sorting is delegated to
- * applyTransactionFilters in src/data/selectors/transactions.ts — this
- * component only assembles the inputs and renders the output.
+ * applyTransactionFilters in ./filterTransactions.ts — this component only
+ * assembles the inputs and renders the output.
  */
 export function Explorer() {
   const userId = useSelectedUser((state) => state.userId);

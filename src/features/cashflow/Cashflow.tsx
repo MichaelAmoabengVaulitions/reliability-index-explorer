@@ -11,8 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 
-import { aggregateCashflow } from '@/data/selectors/cashflow';
-import { fromState } from '@/data/selectors/merge';
+import { fromState } from '@/data/transactionState';
 import { useTransactions } from '@/data/useTransactions';
 import { windowFor } from '@/domain/dates';
 import { formatMoney } from '@/domain/money';
@@ -22,6 +21,8 @@ import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
+
+import { aggregateCashflow } from './aggregateCashflow';
 
 const CHART_HEIGHT = 320;
 // Bar top radius (px) that gives the stacked bars a slightly rounded crown.

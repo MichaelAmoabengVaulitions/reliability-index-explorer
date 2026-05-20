@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 
-import type { TransactionSign, TransactionSort } from '@/data/selectors/transactions';
+// The shape of a transaction filter and sort. This store holds the live
+// filter state, so the types it is built from are defined here too. The
+// transactions feature imports them from this store rather than the reverse.
+export type TransactionSign = 'all' | 'inflow' | 'outflow';
+export type SortField = 'date' | 'amount' | 'merchant_name';
+export type SortDirection = 'asc' | 'desc';
+
+export interface TransactionSort {
+  field: SortField;
+  direction: SortDirection;
+}
 
 /**
  * UI state for the transactions table — what the user has narrowed down to,

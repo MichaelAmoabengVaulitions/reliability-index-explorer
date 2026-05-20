@@ -1,13 +1,5 @@
 import type { Transaction } from '@/api/schemas';
-
-export type TransactionSign = 'all' | 'inflow' | 'outflow';
-export type SortField = 'date' | 'amount' | 'merchant_name';
-export type SortDirection = 'asc' | 'desc';
-
-export interface TransactionSort {
-  field: SortField;
-  direction: SortDirection;
-}
+import type { TransactionSign, TransactionSort } from '@/store/filters';
 
 export interface TransactionFilters {
   categoryCodes?: string[];

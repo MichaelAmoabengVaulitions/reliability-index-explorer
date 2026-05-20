@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildTransaction } from '@/test-utils/fixtures/transactions';
 
 import { queryKeys } from './queryKeys';
-import { toState, type TransactionState } from './selectors/merge';
+import { toState, type TransactionState } from './transactionState';
 import { useTransactionEventStream } from './useTransactionEventStream';
 import { type TransactionsQueryData } from './useTransactions';
 
