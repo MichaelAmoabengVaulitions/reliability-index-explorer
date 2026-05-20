@@ -2,6 +2,10 @@ import { useMemo } from 'react';
 
 import { fromState } from '@/data/selectors/merge';
 import { applyTransactionFilters } from '@/data/selectors/transactions';
+import {
+  type StreamStatus,
+  useTransactionEventStream,
+} from '@/data/useTransactionEventStream';
 import { useTransactions } from '@/data/useTransactions';
 import { windowFor } from '@/domain/dates';
 import { useFilters } from '@/store/filters';
@@ -16,6 +20,37 @@ import { VirtualTable } from './VirtualTable';
 
 const LOADING_ROW_COUNT = 8;
 
+// Visual + screen-reader treatment for each connection state of the live
+// updates stream. Colour alone is not the signal — every state also has a
+// short label so colour-blind users and screen-reader users get the same
+// information (CLAUDE.md rule 8).
+const STREAM_BADGE_BY_STATUS: Record<
+  StreamStatus,
+  { dot: string; text: string; label: string }
+> = {
+  idle: { dot: 'bg-slate-300', text: 'text-slate-500', label: 'Live updates idle' },
+  connecting: {
+    dot: 'bg-amber-400 animate-pulse',
+    text: 'text-amber-600',
+    label: 'Connecting to live updates',
+  },
+  open: { dot: 'bg-emerald-500 animate-pulse', text: 'text-emerald-600', label: 'Live' },
+  closed: { dot: 'bg-red-400', text: 'text-red-600', label: 'Live updates disconnected' },
+};
+
+function LiveBadge({ status }: { status: StreamStatus }) {
+  const tone = STREAM_BADGE_BY_STATUS[status];
+  return (
+    <span
+      aria-live="polite"
+      className={`inline-flex items-center gap-1.5 text-xs font-medium ${tone.text}`}
+    >
+      <span className={`h-2 w-2 rounded-full ${tone.dot}`} aria-hidden="true" />
+      {tone.label}
+    </span>
+  );
+}
+
 /**
  * The transaction explorer feature card.
  *
@@ -29,6 +64,11 @@ export function Explorer() {
   const fromDate = useSelectedUser((state) => state.from);
   const scoringWindow = windowFor(fromDate);
   const transactions = useTransactions(userId, scoringWindow.start, scoringWindow.end);
+  const streamStatus = useTransactionEventStream(
+    userId,
+    scoringWindow.start,
+    scoringWindow.end,
+  );
   const filters = useFilters();
 
   const allTransactions = useMemo(() => {
@@ -49,7 +89,7 @@ export function Explorer() {
 
   if (transactions.isLoading) {
     return (
-      <Card title="Transactions">
+      <Card title="Transactions" actions={<LiveBadge status={streamStatus} />}>
         <div className="space-y-2">
           {Array.from({ length: LOADING_ROW_COUNT }).map((_, index) => (
             <Skeleton key={index} height="44px" />
@@ -61,7 +101,7 @@ export function Explorer() {
 
   if (transactions.error !== null) {
     return (
-      <Card title="Transactions">
+      <Card title="Transactions" actions={<LiveBadge status={streamStatus} />}>
         <ErrorState
           title="Could not load transactions"
           description={transactions.error.message}
@@ -73,7 +113,7 @@ export function Explorer() {
 
   if (allTransactions.length === 0) {
     return (
-      <Card title="Transactions">
+      <Card title="Transactions" actions={<LiveBadge status={streamStatus} />}>
         <EmptyState
           icon="📋"
           title="No transactions in this window"
@@ -87,7 +127,7 @@ export function Explorer() {
   const visibleCount = visibleTransactions.length;
 
   return (
-    <Card title="Transactions">
+    <Card title="Transactions" actions={<LiveBadge status={streamStatus} />}>
       <div className="mb-3">
         <Filters availableCategoryCodes={availableCategoryCodes} />
       </div>
