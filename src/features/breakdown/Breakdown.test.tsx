@@ -1,7 +1,10 @@
 import { screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { useSelectedUser } from '@/store/selectedUser';
+import { buildReliabilityResponse } from '@/test-utils/fixtures/reliability';
+import { server } from '@/test-utils/msw/server';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';
 
 import { Breakdown } from './Breakdown';
@@ -46,5 +49,21 @@ describe('Breakdown', () => {
       expect(screen.getByText(/Savings behavior detected/i)).toBeInTheDocument();
     });
     expect(screen.getByText('+13 pts')).toBeInTheDocument();
+  });
+
+  it('shows a dash on the coverage card when the ratio is null', async () => {
+    server.use(
+      http.get('*/api/users/:userId/reliability', () =>
+        HttpResponse.json(buildReliabilityResponse({ metrics: { income_coverage_ratio: null } })),
+      ),
+    );
+    renderWithProviders(<Breakdown />);
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Income Coverage Ratio' })).toBeInTheDocument();
+    });
+    const coverageCard = screen
+      .getByRole('heading', { name: 'Income Coverage Ratio' })
+      .closest('section');
+    expect(coverageCard).toHaveTextContent('—');
   });
 });

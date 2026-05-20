@@ -1,5 +1,6 @@
 import { useReliability } from '@/data/useReliability';
 import { formatMonth, parseISODate, windowFor } from '@/domain/dates';
+import { formatCoverageRatio } from '@/domain/scoring';
 import { useSelectedUser } from '@/store/selectedUser';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
@@ -14,10 +15,6 @@ const BAND_STYLES = {
   MEDIUM: { chip: 'bg-amber-100 text-amber-900', label: 'Moderate reliability' },
   HIGH: { chip: 'bg-emerald-100 text-emerald-800', label: 'Strong reliability' },
 } as const;
-
-function formatRatio(value: number): string {
-  return `${value.toFixed(2)}x`;
-}
 
 function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -118,8 +115,12 @@ export function Overview() {
             <MetricTile label="Income regularity" value={formatPercent(metrics.income_regularity)} />
             <MetricTile
               label="Income vs expenses"
-              value={formatRatio(metrics.income_coverage_ratio)}
-              hint="Inflow / outflow"
+              value={formatCoverageRatio(metrics.income_coverage_ratio)}
+              hint={
+                metrics.income_coverage_ratio === null
+                  ? 'No essential expenses'
+                  : 'Inflow / outflow'
+              }
             />
             <MetricTile
               label="Essential payments"

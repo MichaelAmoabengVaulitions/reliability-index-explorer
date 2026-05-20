@@ -64,6 +64,14 @@ describe('reliabilityResponseSchema', () => {
     const badBand = { ...validReliabilityResponse, score_band: 'VERY_HIGH' };
     expect(reliabilityResponseSchema.safeParse(badBand).success).toBe(false);
   });
+
+  it('accepts a null income_coverage_ratio — the backend sends null when a user has no essential expenses', () => {
+    const noEssentials = {
+      ...validReliabilityResponse,
+      metrics: { ...validReliabilityResponse.metrics, income_coverage_ratio: null },
+    };
+    expect(reliabilityResponseSchema.safeParse(noEssentials).success).toBe(true);
+  });
 });
 
 describe('transactionEventSchema', () => {
