@@ -93,8 +93,18 @@ Each folder under `src` has one job.
 | `src/test-utils` | The fake data builders and the mock backend used by the tests. |
 
 One rule keeps the feature folders from tangling: a feature folder never
-imports from another feature folder. Anything two features both need lives in
-`data`, `domain`, `store` or `ui`.
+imports from another feature folder. So a feature folder holds only the code
+that one feature uses, and anything two or more features need lives in a
+shared folder instead: `data`, `domain`, `store` or `ui`.
+
+This is why the cashflow totals and the transaction filtering each sit with
+the one feature that uses them, while the code that talks to the backend
+stays in `src/data`. That backend code is kept together even when only one
+screen uses a given piece today, because its job is looking after backend
+data, not drawing one screen. The live updates connection is the clearest
+example: only the transaction explorer switches it on, but it keeps the
+shared transaction data fresh for the cashflow chart as well, so it belongs
+with the data rather than inside one feature.
 
 ## How data flows through the app
 
