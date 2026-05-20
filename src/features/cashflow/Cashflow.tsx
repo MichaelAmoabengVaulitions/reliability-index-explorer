@@ -17,6 +17,7 @@ import { useTransactions } from '@/data/useTransactions';
 import { windowFor } from '@/domain/dates';
 import { formatMoney } from '@/domain/money';
 import { useSelectedUser } from '@/store/selectedUser';
+import { colors } from '@/theme';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { ErrorState } from '@/ui/ErrorState';
@@ -27,10 +28,10 @@ const CHART_HEIGHT = 320;
 const BAR_TOP_RADIUS = 4;
 
 const CHART_COLORS = {
-  inflow: '#10b981',
-  outflow: '#ef4444',
-  net: '#0f172a',
-  grid: '#e2e8f0',
+  inflow: colors.money.inflow,
+  outflow: colors.money.outflow,
+  net: colors.chart.ink,
+  grid: colors.chart.grid,
 };
 
 interface TooltipPayloadEntry {
@@ -137,12 +138,12 @@ export function Cashflow() {
             <CartesianGrid stroke={CHART_COLORS.grid} vertical={false} />
             <XAxis
               dataKey="label"
-              tick={{ fill: '#64748b', fontSize: 12 }}
+              tick={{ fill: colors.chart.axis, fontSize: 12 }}
               axisLine={{ stroke: CHART_COLORS.grid }}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: '#64748b', fontSize: 12 }}
+              tick={{ fill: colors.chart.axis, fontSize: 12 }}
               axisLine={{ stroke: CHART_COLORS.grid }}
               tickLine={false}
               tickFormatter={(value: number) => formatMoney(value, currency)}

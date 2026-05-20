@@ -1,6 +1,7 @@
+import { config } from '@/config';
 import { useReliability } from '@/data/useReliability';
 import { formatMonth, parseISODate, windowFor } from '@/domain/dates';
-import { formatCoverageRatio } from '@/domain/scoring';
+import { captionForDriver, formatCoverageRatio } from '@/domain/scoring';
 import { useSelectedUser } from '@/store/selectedUser';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
@@ -16,6 +17,18 @@ const BAND_STYLES = {
   HIGH: { chip: 'bg-emerald-100 text-emerald-800', label: 'Strong reliability' },
 } as const;
 
+// One plain-language line per metric tile, telling the analyst what the
+// number measures. The wording follows the backend's own driver phrasing
+// so we describe the metric rather than invent a meaning for it.
+const METRIC_DESCRIPTIONS = {
+  incomeRegularity: 'Share of months that had income.',
+  incomeCoverage: 'How far income covers essential expenses.',
+  essentialPayments: 'How consistently essential bills were paid.',
+  goodMonths: 'Months with healthy cashflow in the scoring window.',
+  negativeBalanceDays: 'Days the balance was estimated below zero.',
+  lateFees: 'Late-fee charges detected.',
+} as const;
+
 function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
@@ -23,15 +36,15 @@ function formatPercent(value: number): string {
 interface MetricTileProps {
   label: string;
   value: string;
-  hint?: string;
+  description: string;
 }
 
-function MetricTile({ label, value, hint }: MetricTileProps) {
+function MetricTile({ label, value, description }: MetricTileProps) {
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
       <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
       <p className="m-0 mt-1 text-xl font-semibold text-slate-900">{value}</p>
-      {hint !== undefined && <p className="m-0 mt-0.5 text-xs text-slate-500">{hint}</p>}
+      <p className="m-0 mt-0.5 text-xs text-slate-500">{description}</p>
     </div>
   );
 }
@@ -112,32 +125,43 @@ export function Overview() {
 
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <MetricTile label="Income regularity" value={formatPercent(metrics.income_regularity)} />
+            <MetricTile
+              label="Income regularity"
+              value={formatPercent(metrics.income_regularity)}
+              description={METRIC_DESCRIPTIONS.incomeRegularity}
+            />
             <MetricTile
               label="Income vs expenses"
               value={formatCoverageRatio(metrics.income_coverage_ratio)}
-              hint={
-                metrics.income_coverage_ratio === null
-                  ? 'No essential expenses'
-                  : 'Inflow / outflow'
-              }
+              description={METRIC_DESCRIPTIONS.incomeCoverage}
             />
             <MetricTile
               label="Essential payments"
               value={formatPercent(metrics.essential_payments_consistency)}
+              description={METRIC_DESCRIPTIONS.essentialPayments}
             />
-            <MetricTile label="Good months" value={`${metrics.good_months} / 6`} />
+            <MetricTile
+              label="Good months"
+              value={`${metrics.good_months} / ${config.api.scoringWindowMonths}`}
+              description={METRIC_DESCRIPTIONS.goodMonths}
+            />
             <MetricTile
               label="Negative balance days"
               value={`${metrics.negative_balance_days}`}
-              hint="days in the window"
+              description={METRIC_DESCRIPTIONS.negativeBalanceDays}
             />
-            <MetricTile label="Late fees" value={`${metrics.late_fee_events}`} hint="events" />
+            <MetricTile
+              label="Late fees"
+              value={`${metrics.late_fee_events}`}
+              description={METRIC_DESCRIPTIONS.lateFees}
+            />
           </div>
 
           <div>
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="m-0 text-sm font-semibold text-slate-900">Top drivers</h3>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Top drivers
+              </h3>
               <a
                 href="#explanation"
                 className="text-xs font-medium text-brand-600 hover:text-brand-700"
@@ -145,10 +169,18 @@ export function Overview() {
                 See all explanations →
               </a>
             </div>
-            <ul className="m-0 space-y-1 pl-5 text-sm text-slate-700">
-              {drivers.slice(0, DRIVERS_PREVIEW_COUNT).map((driver) => (
-                <li key={driver}>{driver}</li>
-              ))}
+            <ul className="m-0 flex flex-col gap-3 p-0">
+              {drivers.slice(0, DRIVERS_PREVIEW_COUNT).map((driver) => {
+                const caption = captionForDriver(driver);
+                return (
+                  <li key={driver} className="border-l-2 border-slate-200 pl-3">
+                    <p className="m-0 text-sm font-medium text-slate-800">{driver}</p>
+                    {caption !== undefined && (
+                      <p className="m-0 mt-0.5 text-xs leading-snug text-slate-500">{caption}</p>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>

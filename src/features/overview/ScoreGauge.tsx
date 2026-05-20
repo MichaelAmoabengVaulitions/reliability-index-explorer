@@ -1,4 +1,6 @@
 import type { ReliabilityResponse } from '@/api/schemas';
+import { config } from '@/config';
+import { colors } from '@/theme';
 
 interface ScoreGaugeProps {
   /** The reliability score, expected to be a whole number from 0 to 100. */
@@ -18,12 +20,19 @@ const ARC_END_DEGREES = HALF_CIRCLE_DEGREES * 2;
 const ARC_TOTAL_DEGREES = ARC_END_DEGREES - ARC_START_DEGREES;
 const DEFAULT_SIZE = 320;
 const STROKE_WIDTH = 28;
-// The three coloured arc segments. Their boundaries match the score bands so
-// the visitor sees "needle is in the green zone" without reading numbers.
+const MIN_SCORE = 0;
+const MAX_SCORE = 100;
+// The three coloured arc segments. Their boundaries are the score band
+// thresholds from config, so the coloured zone the needle sits in always
+// agrees with the band the backend reports.
 const SEGMENTS = [
-  { fromScore: 0, toScore: 40, color: '#ef4444' }, // red
-  { fromScore: 40, toScore: 70, color: '#f59e0b' }, // amber
-  { fromScore: 70, toScore: 100, color: '#10b981' }, // green
+  { fromScore: MIN_SCORE, toScore: config.scoring.mediumBandMin, color: colors.band.low },
+  {
+    fromScore: config.scoring.mediumBandMin,
+    toScore: config.scoring.highBandMin,
+    color: colors.band.medium,
+  },
+  { fromScore: config.scoring.highBandMin, toScore: MAX_SCORE, color: colors.band.high },
 ];
 const BAND_TEXT_COLOR: Record<ReliabilityResponse['score_band'], string> = {
   LOW: 'text-band-low',
@@ -100,11 +109,11 @@ export function ScoreGauge({ score, band, size = DEFAULT_SIZE }: ScoreGaugeProps
           y1={centerY}
           x2={needleTip.x}
           y2={needleTip.y}
-          stroke="#0f172a"
+          stroke={colors.chart.ink}
           strokeWidth="3"
           strokeLinecap="round"
         />
-        <circle cx={centerX} cy={centerY} r="6" fill="#0f172a" />
+        <circle cx={centerX} cy={centerY} r="6" fill={colors.chart.ink} />
       </svg>
       <p className={`mt-2 text-score ${BAND_TEXT_COLOR[band]}`}>{score}</p>
       <p className="text-sm font-medium uppercase tracking-wide text-slate-500">out of 100</p>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatCoverageRatio, parseDriver } from './scoring';
+import { captionForDriver, formatCoverageRatio, parseDriver } from './scoring';
 
 describe('parseDriver', () => {
   it('treats a string with no parentheses suffix as neutral', () => {
@@ -62,5 +62,65 @@ describe('formatCoverageRatio', () => {
 
   it('renders a dash when the ratio is null — the user has no essential expenses', () => {
     expect(formatCoverageRatio(null)).toBe('—');
+  });
+});
+
+describe('captionForDriver', () => {
+  it('captions an income regularity driver', () => {
+    expect(captionForDriver('Income present in 5/6 months')).toBe(
+      'How regularly income arrived during the window.',
+    );
+  });
+
+  it('captions an income coverage driver', () => {
+    expect(captionForDriver('Strong income coverage: 2.03x essential expenses')).toBe(
+      'Whether income was enough to cover the essential bills.',
+    );
+  });
+
+  it('captions the no-essential-expenses coverage driver', () => {
+    expect(captionForDriver('No essential expenses detected — coverage neutral')).toBe(
+      'Whether income was enough to cover the essential bills.',
+    );
+  });
+
+  it('captions an essential payments driver', () => {
+    expect(captionForDriver('Essential payments detected consistently')).toBe(
+      'Whether essential bills were paid on a regular schedule.',
+    );
+  });
+
+  it('captions a savings driver', () => {
+    expect(captionForDriver('Savings behavior detected (+13 pts)')).toBe(
+      'Money regularly set aside.',
+    );
+  });
+
+  it('captions a negative balance driver', () => {
+    expect(captionForDriver('Estimated 54 negative balance day(s) (-10 pts)')).toBe(
+      'Days the account was overdrawn.',
+    );
+  });
+
+  it('captions a late fee driver', () => {
+    expect(captionForDriver('1 late fee event(s) detected (-1 pts)')).toBe(
+      'Charges for paying a bill late.',
+    );
+  });
+
+  it('captions a cashflow months driver', () => {
+    expect(captionForDriver('Good cashflow months: 4/6')).toBe(
+      'Months that ended in good financial shape.',
+    );
+  });
+
+  it('captions a high-risk spending driver', () => {
+    expect(captionForDriver('High-risk category spending detected (-3 pts)')).toBe(
+      'Spending in higher-risk categories.',
+    );
+  });
+
+  it('returns undefined for a driver it cannot place, so no caption is shown', () => {
+    expect(captionForDriver('Some new driver the backend invented')).toBeUndefined();
   });
 });

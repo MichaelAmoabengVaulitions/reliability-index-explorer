@@ -16,10 +16,10 @@ afterEach(() => {
 });
 
 describe('Explanation', () => {
-  it('shows the medium-band summary paragraph for the fixture', async () => {
+  it('shows the medium-band lead-in for the fixture', async () => {
     renderWithProviders(<Explanation />);
     await waitFor(() => {
-      expect(screen.getByText(/this score sits in the middle band/i)).toBeInTheDocument();
+      expect(screen.getByText(/a middle-band score/i)).toBeInTheDocument();
     });
   });
 

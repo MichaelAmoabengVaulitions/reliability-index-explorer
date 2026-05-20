@@ -31,5 +31,12 @@ export const config = {
     gcTimeMs: 300_000,
     retryCount: 2,
   },
+  scoring: {
+    // Score band boundaries from the OpenAPI spec: LOW 0-49, MEDIUM 50-74,
+    // HIGH 75-100. The score gauge uses these to colour its arc so the
+    // coloured zones line up with the band the backend reports.
+    mediumBandMin: 50,
+    highBandMin: 75,
+  },
   locale: 'en-US',
 } as const;

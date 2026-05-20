@@ -1,24 +1,17 @@
 import type { ReliabilityResponse } from '@/api/schemas';
 import { useReliability } from '@/data/useReliability';
-import { type ParsedDriver, parseDriver } from '@/domain/scoring';
+import { type ParsedDriver, captionForDriver, parseDriver } from '@/domain/scoring';
 import { useSelectedUser } from '@/store/selectedUser';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
 
+// A short lead-in per band. The specifics that make an explanation useful
+// are the per-user driver rows below, not this sentence.
 const BAND_SUMMARY: Record<ReliabilityResponse['score_band'], string> = {
-  LOW:
-    'This score sits in the low band. It usually means income is irregular ' +
-    'or expenses are running close to (or above) what is coming in. ' +
-    'Lenders are likely to ask for additional context before approving credit.',
-  MEDIUM:
-    'This score sits in the middle band. Income is generally regular and ' +
-    'expenses are covered, but there are some weaker months or risk events. ' +
-    'A clear story for the dips helps when this score is reviewed.',
-  HIGH:
-    'This score sits in the high band. Income is steady, essentials are ' +
-    'paid consistently, and there are very few risk events in the window. ' +
-    'This is a strong profile for approval at standard terms.',
+  LOW: 'A low score. The signals below show what is holding it back.',
+  MEDIUM: 'A middle-band score — a mix of strengths and risks, listed below.',
+  HIGH: 'A high score. The signals below show a consistent profile.',
 };
 
 interface DriverRowProps {
@@ -34,9 +27,15 @@ function pointsChipClasses(driver: ParsedDriver): string {
 function DriverRow({ driver }: DriverRowProps) {
   const showsPoints = driver.points !== undefined;
   const sign = driver.points !== undefined && driver.points > 0 ? '+' : '';
+  const caption = captionForDriver(driver.raw);
   return (
     <li className="flex items-start justify-between gap-3 py-2">
-      <p className="m-0 text-sm text-slate-700">{driver.label}</p>
+      <div className="min-w-0">
+        <p className="m-0 text-sm text-slate-700">{driver.label}</p>
+        {caption !== undefined && (
+          <p className="m-0 mt-0.5 text-xs text-slate-500">{caption}</p>
+        )}
+      </div>
       {showsPoints && (
         <span
           className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pointsChipClasses(driver)}`}
