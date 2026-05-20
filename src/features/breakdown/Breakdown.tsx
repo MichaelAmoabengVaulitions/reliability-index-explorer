@@ -1,7 +1,7 @@
 import type { ReliabilityResponse } from '@/api/schemas';
 import { config } from '@/config';
 import { useReliability } from '@/data/useReliability';
-import { parseDriver } from '@/domain/scoring';
+import { formatCoverageRatio, parseDriver } from '@/domain/scoring';
 import { useSelectedUser } from '@/store/selectedUser';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
@@ -16,6 +16,10 @@ const SIGNAL_CAP_LABELS = {
   essentials: '0–25 pts',
   resilience: '-20 to +25 pts',
 } as const;
+
+// A coverage ratio of 2x or higher reads as "fully covered", so the position
+// bar treats 2x as a full bar.
+const COVERAGE_BAR_FULL_AT = 2;
 
 const SAVINGS_DRIVER_PATTERN = /savings|saving|surplus/i;
 
@@ -115,10 +119,15 @@ export function Breakdown() {
       />
       <SignalCard
         title="Income Coverage Ratio"
-        value={`${metrics.income_coverage_ratio.toFixed(2)}x`}
+        value={formatCoverageRatio(metrics.income_coverage_ratio)}
         // 2x or higher reads as "fully covered" — cap the bar there so 1.4x feels
-        // like roughly two-thirds of the way to comfortable.
-        position={metrics.income_coverage_ratio / 2}
+        // like roughly two-thirds of the way to comfortable. A null ratio (the
+        // user has no essential expenses) leaves the bar empty.
+        position={
+          metrics.income_coverage_ratio === null
+            ? 0
+            : metrics.income_coverage_ratio / COVERAGE_BAR_FULL_AT
+        }
         capLabel={SIGNAL_CAP_LABELS.coverage}
       />
       <SignalCard

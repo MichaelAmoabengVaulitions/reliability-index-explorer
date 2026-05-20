@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseDriver } from './scoring';
+import { formatCoverageRatio, parseDriver } from './scoring';
 
 describe('parseDriver', () => {
   it('treats a string with no parentheses suffix as neutral', () => {
@@ -48,5 +48,19 @@ describe('parseDriver', () => {
     expect(result.kind).toBe('positive');
     expect(result.points).toBe(7);
     expect(result.label).toBe('Spaced suffix');
+  });
+});
+
+describe('formatCoverageRatio', () => {
+  it('renders a number as a ratio with two decimals and an x suffix', () => {
+    expect(formatCoverageRatio(1.41)).toBe('1.41x');
+  });
+
+  it('rounds to two decimals', () => {
+    expect(formatCoverageRatio(2.034)).toBe('2.03x');
+  });
+
+  it('renders a dash when the ratio is null — the user has no essential expenses', () => {
+    expect(formatCoverageRatio(null)).toBe('—');
   });
 });

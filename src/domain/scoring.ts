@@ -1,5 +1,18 @@
 export type DriverKind = 'positive' | 'risk' | 'neutral';
 
+// Shown in place of a coverage ratio the backend could not compute.
+const NO_RATIO_PLACEHOLDER = '—';
+
+// Renders the income-to-expenses coverage ratio for display. A number becomes
+// e.g. "1.41x"; null (which the backend sends when the user has no essential
+// expenses, so there is no ratio to compute) becomes a dash.
+export function formatCoverageRatio(value: number | null): string {
+  if (value === null) {
+    return NO_RATIO_PLACEHOLDER;
+  }
+  return `${value.toFixed(2)}x`;
+}
+
 export interface ParsedDriver {
   raw: string;
   label: string;

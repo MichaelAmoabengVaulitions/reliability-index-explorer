@@ -18,7 +18,10 @@ export const transactionSchema = z.strictObject({
 
 export const scoringMetricsSchema = z.strictObject({
   income_regularity: z.number(),
-  income_coverage_ratio: z.number(),
+  // Null when the user has no essential expenses — there is no denominator
+  // for an income-to-expenses ratio, so the backend reports null rather
+  // than zero. The other metrics stay numeric in that case.
+  income_coverage_ratio: z.number().nullable(),
   essential_payments_consistency: z.number(),
   good_months: z.number().int(),
   negative_balance_days: z.number().int(),

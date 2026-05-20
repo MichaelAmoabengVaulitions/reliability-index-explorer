@@ -1,7 +1,10 @@
 import { screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { useSelectedUser } from '@/store/selectedUser';
+import { buildReliabilityResponse } from '@/test-utils/fixtures/reliability';
+import { server } from '@/test-utils/msw/server';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';
 
 import { Overview } from './Overview';
@@ -38,5 +41,19 @@ describe('Overview', () => {
     });
     expect(screen.getByText(/income covers essential expenses/i)).toBeInTheDocument();
     expect(screen.getByText(/essential payments detected consistently/i)).toBeInTheDocument();
+  });
+
+  it('shows a dash and a "no essential expenses" hint when the coverage ratio is null', async () => {
+    server.use(
+      http.get('*/api/users/:userId/reliability', () =>
+        HttpResponse.json(buildReliabilityResponse({ metrics: { income_coverage_ratio: null } })),
+      ),
+    );
+    renderWithProviders(<Overview />);
+    await waitFor(() => {
+      expect(screen.getByText('No essential expenses')).toBeInTheDocument();
+    });
+    // The score still renders — one null metric does not break the card.
+    expect(screen.getByText('64')).toBeInTheDocument();
   });
 });
