@@ -2,9 +2,13 @@ import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { config } from '@/config';
-import type { SortDirection, SortField, TransactionSign } from '@/data/selectors/transactions';
 import { categoryLabel } from '@/domain/categories';
-import { useFilters } from '@/store/filters';
+import {
+  useFilters,
+  type SortDirection,
+  type SortField,
+  type TransactionSign,
+} from '@/store/filters';
 
 interface FiltersProps {
   /** Category codes actually present in the loaded transactions, drives the dropdown options. */

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { TransactionEvent } from '@/api/schemas';
 import { buildTransaction, buildTransactions } from '@/test-utils/fixtures/transactions';
 
-import { applyTransactionEvent, fromState, toState } from './merge';
+import { applyTransactionEvent, fromState, toState } from './transactionState';
 
 const txOne = buildTransaction({ id: 'tx_1', amount: 100 });
 const txTwo = buildTransaction({ id: 'tx_2', amount: -50 });
