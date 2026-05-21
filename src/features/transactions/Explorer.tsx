@@ -125,6 +125,11 @@ export function Explorer() {
 
   const totalCount = allTransactions.length;
   const visibleCount = visibleTransactions.length;
+  // How much live updates have changed the total, taken straight from the
+  // counts (current total minus the count the backend last reported). Derived
+  // this way, the indicator can never disagree with the number it sits next
+  // to: every added transaction moves both by one.
+  const liveDelta = totalCount - (transactions.data?.total ?? totalCount);
 
   return (
     <Card title="Transactions" actions={<LiveBadge status={streamStatus} />}>
@@ -152,6 +157,11 @@ export function Explorer() {
           <p className="m-0 mt-3 text-xs text-slate-500">
             Showing <span className="font-semibold text-slate-700">{visibleCount}</span> of{' '}
             <span className="font-semibold text-slate-700">{totalCount}</span> transactions
+            {liveDelta !== 0 && (
+              <span className="ml-2 font-semibold text-emerald-700">
+                {liveDelta > 0 ? `+${liveDelta}` : liveDelta} from live updates
+              </span>
+            )}
           </p>
         </>
       )}

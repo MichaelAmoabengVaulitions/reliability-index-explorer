@@ -9,7 +9,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['dist', 'node_modules', 'coverage', 'public']),
+  globalIgnores(['dist', 'node_modules', 'coverage', 'public', 'scripts']),
   {
     files: ['**/*.{ts,tsx}'],
     plugins: {

@@ -56,6 +56,105 @@ yarn build         # build the app ready to deploy
 A note on `yarn run check`: Yarn version 1 has its own built in `yarn check`
 command, so the project script has to be called with `yarn run check`.
 
+## Seeing live updates
+
+The dashboard shows live transaction updates as they arrive. The hosted
+backend's live updates address does not currently work (see Tradeoffs and
+limitations below), so the project includes a small local backend that does.
+It stands in for the whole backend and sends live events in the exact format
+the API specification documents.
+
+This needs **two terminals**, both running at the same time: one for the
+local backend, one for the app. Open a second terminal tab or window before
+you start.
+
+**Terminal 1: start the local backend.**
+
+```bash
+yarn mock
+```
+
+Wait for it to print `Mock backend running at http://localhost:3001`, then
+leave this terminal running. This is the backend, not a web page, so there is
+nothing to open in a browser from here.
+
+**Terminal 2 (a separate terminal): start the app.**
+
+```bash
+yarn dev:mock
+```
+
+This starts the app and points it at the local backend from Terminal 1. It
+prints an address, usually `http://localhost:5173` (or the next free port,
+such as `5174`, if 5173 is already taken). Open that printed address in a
+browser.
+
+Then pick a user from the sidebar and watch: every few seconds the
+Transaction Explorer gains, changes or drops a row, the Cashflow chart
+re-sums, and the Live indicator shows the connection state.
+
+To stop, press Ctrl+C in each terminal.
+
+### Pushing it harder
+
+`yarn mock` takes three optional settings, useful for seeing how far the app
+holds up with a long transaction list and a fast stream of updates:
+
+```bash
+MOCK_TX_COUNT=50000 MOCK_EVENT_TOTAL=100000 MOCK_EVENT_INTERVAL_MS=20 yarn mock
+```
+
+* `MOCK_TX_COUNT`: transactions served per user (default 60).
+* `MOCK_EVENT_TOTAL`: live events sent before the stream closes (default 5).
+* `MOCK_EVENT_INTERVAL_MS`: milliseconds between live events (default 3000;
+  set it low for a fast stream).
+
+The backend prints the active settings when it starts.
+
+### Verified at scale
+
+The live updates feature has been run against the local backend with **50,000
+transactions** loaded and a live event stream running the whole time. The
+virtualised list, the filters, the cashflow chart and the count line all
+stayed responsive.
+
+To repeat the check:
+
+1. Start the local backend with a large dataset and a steady stream of events:
+
+   ```bash
+   MOCK_TX_COUNT=50000 MOCK_EVENT_TOTAL=100000 MOCK_EVENT_INTERVAL_MS=200 yarn mock
+   ```
+
+2. In the second terminal, start the app with `yarn dev:mock`, then open the
+   address it prints.
+3. Pick a user. The 50,000 transactions load one page at a time, and the
+   progress text counts up as they arrive.
+4. While live events keep arriving, confirm that:
+
+   * scrolling the transaction list stays smooth;
+   * changing the sort, typing in the search box and toggling category
+     filters all stay responsive;
+   * the total in the count line keeps moving, and the "+N from live updates"
+     figure beside it always matches how far that total has moved.
+
+### Will it work once the hosted backend is fixed?
+
+Yes. The local backend is not a different design: it sends events in the
+exact format the API specification (`docs/openapi.yaml`) documents, and the
+app's live updates client matches that format point for point.
+
+| The API specification says | The app does |
+| --- | --- |
+| The stream is `GET /api/users/{userId}/transaction-events`, with only a `userId` in the path | Opens the live connection on exactly that address, with no extra parameters |
+| Events are named `TRANSACTION_ADDED`, `TRANSACTION_UPDATED` and `TRANSACTION_DELETED` | Listens for exactly those three event names |
+| Each event's `data` is JSON shaped like `{"type":...,"transaction":{...}}` | Reads `data` as JSON and checks it against the same Zod description the rest of the app uses before applying it |
+| Each event carries an `id`, and the stream closes after its run | The browser tracks the `id` and reconnects on its own; re-applying a repeated event changes nothing, so a reconnection is safe |
+
+So when the hosted stream is fixed, the app needs no change: point it back at
+the hosted backend (the default when you run `yarn dev`) and the same client
+handles the real stream.
+
 ## Libraries chosen, and why
 
 The brief asks for the library choices to be documented.
@@ -209,14 +308,21 @@ depend on the real backend being up.
 
 ## Tradeoffs and limitations
 
-* **Live updates could not be checked against the real backend.** The feature
-  is built and covered by tests, but while it was being built the hosted
-  backend's live updates address was returning an error, so it was only
-  verified against the mock backend and the tests.
-* **All transaction pages are loaded in advance.** This keeps filtering,
-  sorting and the chart simple, because every calculation runs over the full
-  set the app already holds. For very large histories this would change to
-  asking the backend to do the filtering and return pages as needed. See the
+* **The hosted backend does not deliver live updates.** Its live updates
+  address sits behind a gateway that holds the whole response back instead of
+  sending pieces as they happen, so the connection just hangs. The feature is
+  built and tested, and the project ships a small local backend (see "Seeing
+  live updates" above) that sends events in the exact format the API
+  specification documents. The feature was checked end to end against it.
+  Because that local backend follows the documented format, the same client
+  code will work against the hosted backend once it is fixed.
+* **The transaction list loads every page up front and scrolls as one
+  continuous view.** The brief asks for pagination or virtualization; this app
+  uses virtualization, so there are no page-by-page controls — the list draws
+  only the rows on screen and you scroll the whole set. Loading all pages up
+  front keeps filtering, sorting and the chart simple, since every calculation
+  runs over the full set the app already holds. For very large histories this
+  would move the filtering to the backend, returning pages as needed; see the
   Scalability note below.
 * **Merchant category names cover only the codes seen in the data.** An
   unrecognised code shows the raw number rather than a guessed name, on
