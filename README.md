@@ -89,11 +89,24 @@ prints an address, usually `http://localhost:5173` (or the next free port,
 such as `5174`, if 5173 is already taken). Open that printed address in a
 browser.
 
-Then pick a user from the sidebar and watch: every few seconds the
-Transaction Explorer gains, changes or drops a row, the Cashflow chart
-re-sums, and the Live indicator shows the connection state.
+Then pick a user from the sidebar. The dashboard updates on its own as events
+arrive. Here is where to look:
 
-To stop, press Ctrl+C in each terminal.
+* **The Live badge**, at the top right of the Transactions card. A green dot
+  and the word "Live" mean the stream is connected.
+* **The transaction table**. Every few seconds a row is added, changed or
+  removed. Added transactions are dated across the scoring window, so they
+  slot into the date-sorted list rather than all landing at the top.
+* **The count line below the table**. It reads "Showing X of Y transactions",
+  followed by a "live updates" counter. That counter rises by one for every
+  event, whether it added, changed or removed a row, and the name of the most
+  recently added transaction is shown next to it.
+* **The Monthly Cashflow chart**. Live transactions land in different months
+  across the window, so the inflow, outflow and net values of several bars
+  re-sum as events arrive.
+
+By default the local backend streams events continuously, so leave it running
+as long as you want to watch. To stop, press Ctrl+C in each terminal.
 
 ### Pushing it harder
 
@@ -105,7 +118,8 @@ MOCK_TX_COUNT=50000 MOCK_EVENT_TOTAL=100000 MOCK_EVENT_INTERVAL_MS=20 yarn mock
 ```
 
 * `MOCK_TX_COUNT`: transactions served per user (default 60).
-* `MOCK_EVENT_TOTAL`: live events sent before the stream closes (default 5).
+* `MOCK_EVENT_TOTAL`: live events sent on each connection. With nothing set the
+  stream runs continuously; set a number for a fixed count.
 * `MOCK_EVENT_INTERVAL_MS`: milliseconds between live events (default 3000;
   set it low for a fast stream).
 
@@ -135,8 +149,8 @@ To repeat the check:
    * scrolling the transaction list stays smooth;
    * changing the sort, typing in the search box and toggling category
      filters all stay responsive;
-   * the total in the count line keeps moving, and the "+N from live updates"
-     figure beside it always matches how far that total has moved.
+   * the total in the count line keeps moving, and the "live updates" counter
+     beside it keeps rising as events arrive.
 
 ### Will it work once the hosted backend is fixed?
 
@@ -149,7 +163,7 @@ app's live updates client matches that format point for point.
 | The stream is `GET /api/users/{userId}/transaction-events`, with only a `userId` in the path | Opens the live connection on exactly that address, with no extra parameters |
 | Events are named `TRANSACTION_ADDED`, `TRANSACTION_UPDATED` and `TRANSACTION_DELETED` | Listens for exactly those three event names |
 | Each event's `data` is JSON shaped like `{"type":...,"transaction":{...}}` | Reads `data` as JSON and checks it against the same Zod description the rest of the app uses before applying it |
-| Each event carries an `id`, and the stream closes after its run | The browser tracks the `id` and reconnects on its own; re-applying a repeated event changes nothing, so a reconnection is safe |
+| Each event carries an `id`, so a client can resume the stream after a drop | The browser tracks the `id` and reconnects on its own after any drop, showing a "connecting" badge while it retries; re-applying a repeated event changes nothing, so reconnecting is safe |
 
 So when the hosted stream is fixed, the app needs no change: point it back at
 the hosted backend (the default when you run `yarn dev`) and the same client
