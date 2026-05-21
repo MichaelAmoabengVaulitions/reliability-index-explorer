@@ -19,13 +19,19 @@ interface SimpleListener {
  * network and is missing in the test environment, so we keep the instances
  * here and add a small "emit" helper so each test can send the events it
  * cares about. It records "closed" so the unmount test can check the stream
- * really does shut down.
+ * really does shut down, and carries a readyState (CONNECTING / OPEN / CLOSED)
+ * so a test can model a dropped connection that is either being retried or
+ * has failed for good.
  */
 class MockEventSource {
   static last: MockEventSource | null = null;
+  static readonly CONNECTING = 0;
+  static readonly OPEN = 1;
+  static readonly CLOSED = 2;
   url: string;
   private listeners = new Map<string, SimpleListener[]>();
   closed = false;
+  readyState: number = MockEventSource.CONNECTING;
   onopen: (() => void) | null = null;
   onerror: (() => void) | null = null;
 
@@ -47,6 +53,7 @@ class MockEventSource {
 
   close(): void {
     this.closed = true;
+    this.readyState = MockEventSource.CLOSED;
   }
 }
 
@@ -193,11 +200,11 @@ describe('useTransactionEventStream', () => {
     const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
     });
-    expect(result.current).toBe('connecting');
+    expect(result.current.status).toBe('connecting');
     act(() => {
       MockEventSource.last?.onopen?.();
     });
-    await waitFor(() => expect(result.current).toBe('open'));
+    await waitFor(() => expect(result.current.status).toBe('open'));
   });
 
   it('reports an idle status when no user is selected', () => {
@@ -205,6 +212,137 @@ describe('useTransactionEventStream', () => {
     const { result } = renderHook(() => useTransactionEventStream('', FROM, TO), {
       wrapper: buildWrapper(queryClient),
     });
-    expect(result.current).toBe('idle');
+    expect(result.current.status).toBe('idle');
+  });
+
+  it('stays in the connecting state when the stream drops but the browser is retrying', async () => {
+    const queryClient = new QueryClient();
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+    act(() => {
+      MockEventSource.last?.onopen?.();
+    });
+    await waitFor(() => expect(result.current.status).toBe('open'));
+    act(() => {
+      const source = MockEventSource.last;
+      if (source) source.readyState = MockEventSource.CONNECTING;
+      source?.onerror?.();
+    });
+    await waitFor(() => expect(result.current.status).toBe('connecting'));
+  });
+
+  it('reports a closed status only when the connection has failed for good', async () => {
+    const queryClient = new QueryClient();
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+    act(() => {
+      const source = MockEventSource.last;
+      if (source) source.readyState = MockEventSource.CLOSED;
+      source?.onerror?.();
+    });
+    await waitFor(() => expect(result.current.status).toBe('closed'));
+  });
+
+  it('counts each live update applied, whatever kind it is', async () => {
+    const queryClient = new QueryClient();
+    seedTransactionsCache(
+      queryClient,
+      toState([buildTransaction({ id: 'tx_1' }), buildTransaction({ id: 'tx_2' })]),
+    );
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+    expect(result.current.eventCount).toBe(0);
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', {
+        type: 'TRANSACTION_ADDED',
+        transaction: buildTransaction({ id: 'tx_3' }),
+      });
+      MockEventSource.last?.emit('TRANSACTION_UPDATED', {
+        type: 'TRANSACTION_UPDATED',
+        transaction: buildTransaction({ id: 'tx_1', amount: 50 }),
+      });
+      MockEventSource.last?.emit('TRANSACTION_DELETED', {
+        type: 'TRANSACTION_DELETED',
+        transaction_id: 'tx_2',
+      });
+    });
+    await waitFor(() => expect(result.current.eventCount).toBe(3));
+  });
+
+  it('does not count an event that fails validation', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const queryClient = new QueryClient();
+    seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1' })]));
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', { type: 'NOT_A_REAL_EVENT' });
+    });
+    expect(result.current.eventCount).toBe(0);
+    warn.mockRestore();
+  });
+
+  it('starts the count again from zero when the selected user changes', async () => {
+    const queryClient = new QueryClient();
+    seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1' })]));
+    const { result, rerender } = renderHook(
+      ({ userId }: { userId: string }) => useTransactionEventStream(userId, FROM, TO),
+      { wrapper: buildWrapper(queryClient), initialProps: { userId: USER_ID } },
+    );
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', {
+        type: 'TRANSACTION_ADDED',
+        transaction: buildTransaction({ id: 'tx_2' }),
+      });
+    });
+    await waitFor(() => expect(result.current.eventCount).toBe(1));
+    rerender({ userId: 'user_1002' });
+    expect(result.current.eventCount).toBe(0);
+  });
+
+  it('exposes the merchant name of the most recently added transaction', async () => {
+    const queryClient = new QueryClient();
+    seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1' })]));
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+    expect(result.current.lastAddedName).toBeUndefined();
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', {
+        type: 'TRANSACTION_ADDED',
+        transaction: buildTransaction({ id: 'tx_2', merchant_name: 'Side Gig Payout' }),
+      });
+    });
+    await waitFor(() => expect(result.current.lastAddedName).toBe('Side Gig Payout'));
+  });
+
+  it('keeps the last added name when a later event updates or deletes', async () => {
+    const queryClient = new QueryClient();
+    seedTransactionsCache(
+      queryClient,
+      toState([buildTransaction({ id: 'tx_1' }), buildTransaction({ id: 'tx_2' })]),
+    );
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', {
+        type: 'TRANSACTION_ADDED',
+        transaction: buildTransaction({ id: 'tx_3', merchant_name: 'Cafe Central' }),
+      });
+    });
+    await waitFor(() => expect(result.current.lastAddedName).toBe('Cafe Central'));
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_DELETED', {
+        type: 'TRANSACTION_DELETED',
+        transaction_id: 'tx_1',
+      });
+    });
+    await waitFor(() => expect(result.current.eventCount).toBe(2));
+    expect(result.current.lastAddedName).toBe('Cafe Central');
   });
 });

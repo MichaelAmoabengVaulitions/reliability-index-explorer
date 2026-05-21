@@ -18,9 +18,9 @@
  *
  * Three optional settings scale it up for stress testing how far the app
  * holds up:
- *   MOCK_TX_COUNT           transactions per user                (default 60)
- *   MOCK_EVENT_TOTAL        live events before the stream closes  (default 5)
- *   MOCK_EVENT_INTERVAL_MS  milliseconds between live events      (default 3000)
+ *   MOCK_TX_COUNT           transactions per user             (default 60)
+ *   MOCK_EVENT_TOTAL        live events per connection        (default: continuous)
+ *   MOCK_EVENT_INTERVAL_MS  milliseconds between live events  (default 3000)
  *
  * Run it:                          yarn mock
  * Then run the app pointed at it:  yarn dev:mock
@@ -35,6 +35,14 @@ const FIRST_EVENT_DELAY_MS = 1000;
 const MS_PER_DAY = 86400000;
 
 /*
+ * Live "added" events are dated across the last few months rather than all on
+ * today. That way the cashflow chart reacts across several of its bars as the
+ * stream runs, instead of only the current month's bar. The span is kept just
+ * under the six-month scoring window so every date still lands inside it.
+ */
+const LIVE_EVENT_DATE_SPAN_DAYS = 150;
+
+/*
  * Reads a number from the environment. Written as a helper so a value of 0,
  * which is a valid choice for the event gap, is kept rather than treated as
  * missing.
@@ -47,7 +55,13 @@ function numberSetting(name, fallback) {
 }
 
 const TX_COUNT = numberSetting('MOCK_TX_COUNT', 60);
-const EVENT_TOTAL = numberSetting('MOCK_EVENT_TOTAL', 5);
+/*
+ * With nothing set, the stream runs continuously: events keep arriving until
+ * the server is stopped, which is what a demo wants. Set MOCK_EVENT_TOTAL to a
+ * number to send a fixed count instead, which is useful for a bounded stress
+ * run.
+ */
+const EVENT_TOTAL = numberSetting('MOCK_EVENT_TOTAL', Infinity);
 const EVENT_INTERVAL_MS = numberSetting('MOCK_EVENT_INTERVAL_MS', 3000);
 
 const CORS_HEADERS = {
@@ -266,16 +280,18 @@ function transactionsResponse(userId, url) {
 let connectionCount = 0;
 
 /*
- * Builds event number `index` of a connection's stream. Most are new
- * transactions; a few update or delete ones the page response already holds,
- * so their effect is visible. Events are built one at a time, so a very large
- * MOCK_EVENT_TOTAL never needs a large array held in memory.
+ * Builds event number `index` of a connection's stream. The stream is a mix:
+ * most events add a new transaction, while every fifth deletes one and every
+ * third updates one, so even the short default run shows all three kinds of
+ * change. The updated and deleted ids are ones the page response already
+ * holds, so the effect is visible in the table. Events are built one at a
+ * time, so a very large MOCK_EVENT_TOTAL never needs a large array in memory.
  */
 function buildEvent(userId, connectionId, index) {
-  if (index % 12 === 0) {
+  if (index % 5 === 0) {
     return { type: 'TRANSACTION_DELETED', transaction_id: transactionId(userId, 5) };
   }
-  if (index % 7 === 0) {
+  if (index % 3 === 0) {
     return {
       type: 'TRANSACTION_UPDATED',
       transaction: makeTransaction({
@@ -297,13 +313,19 @@ function buildEvent(userId, connectionId, index) {
   const merchant = isInflowAdd
     ? INCOME_MERCHANTS[index % INCOME_MERCHANTS.length]
     : EXPENSE_MERCHANTS[index % EXPENSE_MERCHANTS.length];
+  /*
+   * Step the date back about a month per event and wrap, so consecutive adds
+   * land in different months of the scoring window and the cashflow chart
+   * reacts across its bars rather than only today's.
+   */
+  const dayOffset = (index * 29) % LIVE_EVENT_DATE_SPAN_DAYS;
   return {
     type: 'TRANSACTION_ADDED',
     transaction: makeTransaction({
       id: `tx_${userId}_live_${connectionId}_${index}`,
       userId,
       amount: merchant.amount,
-      date: todayIso(),
+      date: addDays(todayIso(), -dayOffset),
       code: merchant.code,
       name: merchant.name,
       description: merchant.description,
@@ -326,8 +348,15 @@ function streamEvents(req, res, userId) {
 
   const sendNext = () => {
     if (sent >= EVENT_TOTAL) {
-      res.end();
-      console.log(`  stream for ${userId} sent ${sent} events and closed`);
+      /*
+       * A real live-updates backend holds the connection open and waits for
+       * the next event rather than closing after a fixed number. We do the
+       * same: once every scheduled event has been sent we stop sending but
+       * leave the connection open, so the app's badge stays on "Live" instead
+       * of dropping into a reconnect. The connection is released when the
+       * browser navigates away (see the "close" handler below).
+       */
+      console.log(`  ${userId}: sent ${sent} events, holding the connection open`);
       return;
     }
     sent += 1;
@@ -337,7 +366,8 @@ function streamEvents(req, res, userId) {
     );
     // Keep the log readable when the event count is large.
     if (sent <= 5 || sent % 500 === 0 || sent === EVENT_TOTAL) {
-      console.log(`  ${userId}: event ${sent} of ${EVENT_TOTAL} (${event.type})`);
+      const totalLabel = Number.isFinite(EVENT_TOTAL) ? ` of ${EVENT_TOTAL}` : '';
+      console.log(`  ${userId}: event ${sent}${totalLabel} (${event.type})`);
     }
     /*
      * If the app is reading slower than we are sending, wait for its buffer to
@@ -411,6 +441,7 @@ const server = createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`Mock backend running at http://localhost:${PORT}`);
   console.log(`  transactions per user:       ${TX_COUNT}`);
-  console.log(`  live events per connection:  ${EVENT_TOTAL}, one every ${EVENT_INTERVAL_MS}ms`);
+  const eventTotalLabel = Number.isFinite(EVENT_TOTAL) ? `${EVENT_TOTAL}` : 'continuous';
+  console.log(`  live events per connection:  ${eventTotalLabel}, one every ${EVENT_INTERVAL_MS}ms`);
   console.log('Start the app against it with:  yarn dev:mock');
 });

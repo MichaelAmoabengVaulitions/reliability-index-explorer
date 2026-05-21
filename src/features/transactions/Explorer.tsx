@@ -66,7 +66,7 @@ export function Explorer() {
   const fromDate = useSelectedUser((state) => state.from);
   const scoringWindow = windowFor(fromDate);
   const transactions = useTransactions(userId, scoringWindow.start, scoringWindow.end);
-  const streamStatus = useTransactionEventStream(
+  const stream = useTransactionEventStream(
     userId,
     scoringWindow.start,
     scoringWindow.end,
@@ -91,7 +91,7 @@ export function Explorer() {
 
   if (transactions.isLoading) {
     return (
-      <Card title="Transactions" actions={<LiveBadge status={streamStatus} />}>
+      <Card title="Transactions" actions={<LiveBadge status={stream.status} />}>
         <div className="space-y-2">
           {Array.from({ length: LOADING_ROW_COUNT }).map((_, index) => (
             <Skeleton key={index} height="44px" />
@@ -103,7 +103,7 @@ export function Explorer() {
 
   if (transactions.error !== null) {
     return (
-      <Card title="Transactions" actions={<LiveBadge status={streamStatus} />}>
+      <Card title="Transactions" actions={<LiveBadge status={stream.status} />}>
         <ErrorState
           title="Could not load transactions"
           description={transactions.error.message}
@@ -115,7 +115,7 @@ export function Explorer() {
 
   if (allTransactions.length === 0) {
     return (
-      <Card title="Transactions" actions={<LiveBadge status={streamStatus} />}>
+      <Card title="Transactions" actions={<LiveBadge status={stream.status} />}>
         <EmptyState
           icon="📋"
           title="No transactions in this window"
@@ -127,16 +127,9 @@ export function Explorer() {
 
   const totalCount = allTransactions.length;
   const visibleCount = visibleTransactions.length;
-  /*
-   * How much live updates have changed the total, worked out straight from
-   * the counts (current total minus the count the backend last reported).
-   * Worked out this way, the figure can never disagree with the total it sits
-   * next to: every added transaction moves both by one.
-   */
-  const liveDelta = totalCount - (transactions.data?.total ?? totalCount);
 
   return (
-    <Card title="Transactions" actions={<LiveBadge status={streamStatus} />}>
+    <Card title="Transactions" actions={<LiveBadge status={stream.status} />}>
       <div className="mb-3">
         <Filters availableCategoryCodes={availableCategoryCodes} />
       </div>
@@ -161,9 +154,15 @@ export function Explorer() {
           <p className="m-0 mt-3 text-xs text-slate-500">
             Showing <span className="font-semibold text-slate-700">{visibleCount}</span> of{' '}
             <span className="font-semibold text-slate-700">{totalCount}</span> transactions
-            {liveDelta !== 0 && (
+            {stream.eventCount > 0 && (
               <span className="ml-2 font-semibold text-emerald-700">
-                {liveDelta > 0 ? `+${liveDelta}` : liveDelta} from live updates
+                · {stream.eventCount} live {stream.eventCount === 1 ? 'update' : 'updates'}
+              </span>
+            )}
+            {stream.lastAddedName !== undefined && (
+              <span className="ml-2">
+                · last added:{' '}
+                <span className="font-medium text-slate-700">{stream.lastAddedName}</span>
               </span>
             )}
           </p>
