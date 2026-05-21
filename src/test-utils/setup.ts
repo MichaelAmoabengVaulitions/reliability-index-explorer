@@ -3,7 +3,10 @@ import { afterAll, afterEach, beforeAll } from 'vitest';
 
 import { server } from './msw/server';
 
-// onUnhandledRequest: 'error' surfaces missing mocks loudly instead of letting tests hit the network.
+/*
+ * onUnhandledRequest: 'error' makes a missing mock fail loudly, instead of
+ * letting a test quietly reach the real network.
+ */
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());

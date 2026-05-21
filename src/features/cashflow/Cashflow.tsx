@@ -74,11 +74,11 @@ function CashflowTooltip({
 }
 
 /**
- * Monthly inflow / outflow / net cashflow chart for the scoring window.
+ * Monthly money-in, money-out and net cashflow chart for the scoring window.
  *
- * The aggregation runs inside a useMemo keyed on the transactions reference
- * so re-renders that do not change the underlying list reuse the same array
- * Recharts has already laid out.
+ * The monthly totals are worked out inside a useMemo tied to the transactions,
+ * so a redraw that does not change the transactions reuses the totals the
+ * chart has already drawn.
  */
 export function Cashflow() {
   const userId = useSelectedUser((state) => state.userId);
@@ -127,7 +127,7 @@ export function Cashflow() {
     );
   }
 
-  // Pick the currency from any transaction — the API uses one currency per user.
+  // Take the currency from any transaction; the API uses one currency per user.
   const list = transactions.data === undefined ? [] : fromState(transactions.data.state);
   const currency = list[0]?.currency ?? 'EUR';
 

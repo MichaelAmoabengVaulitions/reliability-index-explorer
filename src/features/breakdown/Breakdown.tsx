@@ -7,9 +7,11 @@ import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
 
-// Each signal has a cap label describing where it sits on the 100-point scale.
-// The minScore / maxScore drive the position bar so the bar shows where the
-// metric falls inside its own band, not on the overall 0–100 axis.
+/*
+ * Each signal shows a "cap label" with the points range it can score. The
+ * position bar fills to show where the signal sits inside its own range, not
+ * on the overall 0 to 100 scale.
+ */
 const SIGNAL_CAP_LABELS = {
   regularity: '0–25 pts',
   coverage: '0–25 pts',
@@ -17,8 +19,10 @@ const SIGNAL_CAP_LABELS = {
   resilience: '-20 to +25 pts',
 } as const;
 
-// A coverage ratio of 2x or higher reads as "fully covered", so the position
-// bar treats 2x as a full bar.
+/*
+ * A coverage ratio of 2x or higher reads as "fully covered", so the position
+ * bar treats 2x as a full bar.
+ */
 const COVERAGE_BAR_FULL_AT = 2;
 
 const SAVINGS_DRIVER_PATTERN = /savings|saving|surplus/i;
@@ -27,7 +31,7 @@ interface SignalCardProps {
   title: string;
   /** The displayed value, already formatted for human reading. */
   value: string;
-  /** Where the value sits inside its band, 0..1. Drives the bar fill. */
+  /** Where the value sits inside its band, from 0 to 1. Sets how full the bar is. */
   position: number;
   capLabel: string;
   extraRow?: { label: string; value: string };
@@ -68,13 +72,13 @@ function findSavingsDriver(response: ReliabilityResponse) {
 }
 
 /**
- * Four-card breakdown of the score's contributing signals.
+ * A four-card breakdown of the signals that make up the score.
  *
- * The first three signals come straight from `metrics`. The fourth signal
- * (Resilience) bundles three metric inputs plus an optional savings row
- * sourced from the drivers strings — the API does not surface a savings
- * field directly. When the savings driver is missing the row just does
- * not render, never a guess.
+ * The first three signals come straight from the metrics. The fourth
+ * (Resilience) is built from three of the metric numbers, plus an optional
+ * savings line read from the driver strings, because the API has no separate
+ * savings field. When there is no savings driver, that line is simply left
+ * out rather than guessed.
  */
 export function Breakdown() {
   const userId = useSelectedUser((state) => state.userId);
@@ -120,9 +124,11 @@ export function Breakdown() {
       <SignalCard
         title="Income Coverage Ratio"
         value={formatCoverageRatio(metrics.income_coverage_ratio)}
-        // 2x or higher reads as "fully covered" — cap the bar there so 1.4x feels
-        // like roughly two-thirds of the way to comfortable. A null ratio (the
-        // user has no essential expenses) leaves the bar empty.
+        /*
+         * 2x or higher reads as "fully covered", so the bar is capped there;
+         * 1.4x then fills about two-thirds. A null ratio (the user has no
+         * essential expenses) leaves the bar empty.
+         */
         position={
           metrics.income_coverage_ratio === null
             ? 0

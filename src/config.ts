@@ -1,17 +1,18 @@
 /**
- * All numeric constants and tuning values live in this file.
- * No magic numbers anywhere else in the codebase (CLAUDE.md rule 3).
- * If you need a number in a component, store, or selector, add it here first.
+ * Every adjustable number and setting in one place, so there are no stray
+ * numbers scattered through the code. If you need a number in a component, a
+ * store, or a helper, add it here first.
  */
 export const config = {
   api: {
     baseUrl: 'https://wydokyegph.execute-api.eu-central-1.amazonaws.com',
     transactionPageLimit: 500,
     scoringWindowMonths: 6,
-    // The only user id the OpenAPI spec gives as an example. The user picker
-    // shows this list when the discovery endpoint returns nothing usable, so
-    // the dropdown is never empty. Remove this once we know what the real
-    // discovery endpoint returns.
+    /*
+     * The only user id the API specification gives as an example. The user
+     * picker falls back to this list when the discovery endpoint returns
+     * nothing usable, so the dropdown is never empty.
+     */
     fallbackUserIds: ['user_1001'] as const,
   },
   ui: {
@@ -27,14 +28,16 @@ export const config = {
   },
   query: {
     staleTimeMs: 60_000,
-    // 5 minutes — kept as a single literal so the no-magic-numbers rule does not flag the multiplier.
+    // Five minutes.
     gcTimeMs: 300_000,
     retryCount: 2,
   },
   scoring: {
-    // Score band boundaries from the OpenAPI spec: LOW 0-49, MEDIUM 50-74,
-    // HIGH 75-100. The score gauge uses these to colour its arc so the
-    // coloured zones line up with the band the backend reports.
+    /*
+     * Score band ranges from the API specification: LOW 0-49, MEDIUM 50-74,
+     * HIGH 75-100. The score gauge uses these to colour its arc so the
+     * coloured zones line up with the band the backend reports.
+     */
     mediumBandMin: 50,
     highBandMin: 75,
   },

@@ -47,7 +47,7 @@ async function readErrorMessage(response: Response, fallback: string): Promise<s
       return body.error;
     }
   } catch {
-    // body not JSON; fall through to the fallback message
+    // The body was not JSON, so use the fallback message instead.
   }
   return fallback;
 }
@@ -69,7 +69,7 @@ export async function request<S extends z.ZodType>(
       .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
       .join('; ');
     throw new ValidationError(
-      `Response from ${path} failed validation — ${summary}`,
+      `Response from ${path} did not match what we expected: ${summary}`,
       parsed.error.issues,
     );
   }
@@ -94,9 +94,11 @@ interface FetchTransactionPageOptions {
 
 const FIRST_PAGE = 1;
 
-// Asks the backend for one page of transactions using page-and-limit
-// pagination. The real backend returns offset-paginated responses with a
-// has_more flag, so we always pass both page and limit on every call.
+/*
+ * Asks the backend for one page of transactions. The backend splits the list
+ * into numbered pages, so we send a page number and a page size every time,
+ * and it tells us with has_more whether any pages are left.
+ */
 export function fetchTransactionPage({
   userId,
   from,
@@ -120,11 +122,12 @@ interface FetchAllTransactionsOptions {
   onProgress?: (loaded: number, total: number) => void;
 }
 
-// Asks the backend for one page at a time and stitches the results into one
-// flat array. The optional onProgress callback fires once after every page,
-// so the UI can render a "loaded N of M" indicator while the load is still
-// in flight. We stop when the server tells us there is no more data with
-// has_more === false.
+/*
+ * Asks the backend for one page at a time and joins the results into a single
+ * list. The optional onProgress function is called once after every page, so
+ * the screen can show a "loaded N of M" line while the load is still in flight.
+ * We stop when the backend says there is no more data (has_more is false).
+ */
 export async function fetchAllTransactions({
   userId,
   from,
@@ -142,13 +145,15 @@ export async function fetchAllTransactions({
   }
 }
 
-// Asks the discovery endpoint which user ids are available. The OpenAPI
-// spec does not say what the response looks like, so we accept either of
-// the two common layouts ('users' or 'userIds'). If the response has
-// neither (or fails validation outright), we return a hard-coded sample
-// list so the dropdown is never empty. Network errors are different: those
-// still get re-thrown to the caller, because an outage is not the same
-// problem as an unexpected response body.
+/*
+ * Asks the discovery endpoint which user ids are available. The API
+ * specification does not say what this response looks like, so we accept any
+ * of the three field names the backend has used ('available_users', 'users'
+ * or 'userIds'). If the response has none of them, or does not match what we
+ * expect, we fall back to a small sample list so the dropdown is never empty.
+ * A failed request is different: that is passed back to the caller, because
+ * the network being down is not the same problem as an unexpected response.
+ */
 export async function fetchAvailableUserIds(): Promise<readonly string[]> {
   try {
     const discovery = await request('/', discoveryResponseSchema);

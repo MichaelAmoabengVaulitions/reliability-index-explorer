@@ -9,9 +9,11 @@ export function parseISODate(yyyyMmDd: string): Date {
   return new Date(`${yyyyMmDd}T00:00:00.000Z`);
 }
 
-// Renders a date as the abbreviated month and year, for example "Feb 2026".
-// We force UTC so the displayed month matches the underlying calendar date and never
-// shifts because of the viewer's local timezone.
+/*
+ * Formats a date as the short month and year, for example "Feb 2026". We use
+ * UTC so the month shown matches the calendar date and does not shift with
+ * the viewer's time zone.
+ */
 export function formatMonth(date: Date): string {
   return new Intl.DateTimeFormat(config.locale, {
     month: 'short',
@@ -26,10 +28,12 @@ export function monthKey(date: Date): string {
   return `${year}-${month}`;
 }
 
-// Returns the six-calendar-month scoring window ending at the `from` date.
-// Example: from "2026-02-20" gives { start: "2025-09-01", end: "2026-02-20" }.
-// We subtract one less than the window length because the `from` month itself counts
-// as the sixth month — so a six-month window goes back five whole months from there.
+/*
+ * Returns the six-month scoring window that ends at the from date. For
+ * example, a from of "2026-02-20" gives a start of "2025-09-01" and an end of
+ * "2026-02-20". The from month counts as the sixth month, so the start is
+ * five whole months earlier.
+ */
 export function windowFor(from: string): ScoringWindow {
   const fromDate = parseISODate(from);
   const year = fromDate.getUTCFullYear();
@@ -47,8 +51,10 @@ function formatISODate(date: Date): string {
   return `${monthKey(date)}-${day}`;
 }
 
-// Today's UTC calendar day as YYYY-MM-DD. Backend and store both speak UTC, so we
-// never want to fall back to the viewer's local timezone here.
+/*
+ * Today's date as YYYY-MM-DD, in UTC. The backend and the stores both use
+ * UTC, so the viewer's local time zone must not change the day here.
+ */
 export function todayAsIsoDate(): string {
   return formatISODate(new Date());
 }

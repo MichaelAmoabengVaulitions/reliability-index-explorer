@@ -9,9 +9,9 @@ interface RowProps {
 /**
  * One transaction line in the virtual table.
  *
- * Inflow amounts render in green with a leading "+", outflows in red with a
- * leading "−". The sign is duplicated on purpose: colour alone is not a
- * reliable signal for colour-blind visitors (CLAUDE.md rule 8).
+ * Money coming in shows in green with a leading "+", money going out in red
+ * with a leading "−". The sign is shown as well as the colour on purpose:
+ * colour on its own is not a reliable signal for colour-blind visitors.
  */
 export function Row({ transaction, height }: RowProps) {
   const isInflow = transaction.amount > 0;

@@ -11,16 +11,18 @@ import { type TransactionsQueryData } from './useTransactions';
 /**
  * The connection state of the live updates stream.
  *
- *  - "idle"        — nothing to subscribe to yet (no user picked).
- *  - "connecting"  — we opened the stream and are waiting for it to start.
- *  - "open"        — the stream is connected and events are flowing.
- *  - "closed"      — the stream errored or was shut down.
+ *  "idle":        nothing to connect to yet (no user picked).
+ *  "connecting":  the stream is opening and we are waiting for it to start.
+ *  "open":        the stream is connected and events are arriving.
+ *  "closed":      the stream failed or was shut down.
  */
 export type StreamStatus = 'idle' | 'connecting' | 'open' | 'closed';
 
-// The event names we listen for. They mirror the enum in
-// transactionEventSchema, so adding a new event type means updating both
-// in lock-step.
+/*
+ * The event names we listen for. They match the list in
+ * transactionEventSchema, so a new event type means updating this list and
+ * that one together.
+ */
 const EVENT_TYPE_NAMES: readonly TransactionEvent['type'][] = [
   'TRANSACTION_ADDED',
   'TRANSACTION_UPDATED',
@@ -28,14 +30,14 @@ const EVENT_TYPE_NAMES: readonly TransactionEvent['type'][] = [
 ];
 
 /**
- * Opens a long-lived HTTP stream that the backend uses to push transaction
- * add, update, and delete events as they happen. Every event is validated
- * with the same schema the rest of the app uses, then folded into the
- * cached transactions for the active user so the UI updates without a
- * refetch.
+ * Opens a long-running connection that the backend uses to send transaction
+ * add, update and delete events as they happen. Every event is checked
+ * against the same description the rest of the app uses, then applied to the
+ * stored transactions for the current user, so the screen updates without
+ * asking the backend again.
  *
- * Returns the current connection state so the consumer can render a
- * "Live" badge or similar indicator.
+ * Returns the current connection state, so the component using it can show a
+ * "Live" badge or similar.
  */
 export function useTransactionEventStream(
   userId: string,
@@ -43,16 +45,20 @@ export function useTransactionEventStream(
   to: string,
 ): StreamStatus {
   const queryClient = useQueryClient();
-  // EventSource is part of the browser runtime, not jsdom or server
-  // rendering. When it is missing we treat the subscription as a no-op so
-  // tests and SSR keep working — the live badge stays idle.
+  /*
+   * EventSource is a browser feature, and is missing in the test environment.
+   * When it is not there we simply do nothing: the live badge stays idle and
+   * tests keep working.
+   */
   const eventSourceAvailable = typeof EventSource !== 'undefined';
   const shouldSubscribe =
     eventSourceAvailable && userId.length > 0 && from.length > 0 && to.length > 0;
 
-  // We hold a sub-set of the status here. The "idle" value is derived from
-  // shouldSubscribe at render time, so we never have to call setState in
-  // the effect body to flip back to it.
+  /*
+   * We keep only the connecting/open/closed part of the status here. The
+   * "idle" value is worked out from shouldSubscribe as the component draws,
+   * so we never have to set state from inside the effect to go back to idle.
+   */
   const [connectionStatus, setConnectionStatus] = useState<
     Exclude<StreamStatus, 'idle'>
   >('connecting');
@@ -77,7 +83,7 @@ export function useTransactionEventStream(
       const parsed = transactionEventSchema.safeParse(payload);
       if (!parsed.success) {
         console.warn(
-          'Live transaction event did not match the expected schema; skipping it.',
+          'Live transaction event did not match the expected shape; skipping it.',
           parsed.error,
         );
         return;

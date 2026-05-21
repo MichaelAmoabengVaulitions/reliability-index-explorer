@@ -14,11 +14,13 @@ interface SimpleListener {
   (event: MessageEvent): void;
 }
 
-// Test double for the browser's EventSource. The real one connects to the
-// network and is not present in jsdom, so we capture instances here and
-// expose a tiny "emit" helper so each test can drive the events it cares
-// about. Tracks "closed" so the unmount test can prove the stream really
-// does shut down.
+/*
+ * A stand-in for the browser's EventSource. The real one connects to the
+ * network and is missing in the test environment, so we keep the instances
+ * here and add a small "emit" helper so each test can send the events it
+ * cares about. It records "closed" so the unmount test can check the stream
+ * really does shut down.
+ */
 class MockEventSource {
   static last: MockEventSource | null = null;
   url: string;
@@ -100,7 +102,7 @@ describe('useTransactionEventStream', () => {
     expect(MockEventSource.last).toBeNull();
   });
 
-  it('closes the stream when the consumer unmounts', () => {
+  it('closes the stream when the component using it unmounts', () => {
     const queryClient = new QueryClient();
     const { unmount } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
@@ -170,7 +172,7 @@ describe('useTransactionEventStream', () => {
     });
   });
 
-  it('skips events whose payload does not match the schema, logging a warning', async () => {
+  it('skips an event that does not match the expected shape, and logs a warning', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const queryClient = new QueryClient();
     seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1' })]));

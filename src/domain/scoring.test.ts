@@ -52,7 +52,7 @@ describe('parseDriver', () => {
 });
 
 describe('formatCoverageRatio', () => {
-  it('renders a number as a ratio with two decimals and an x suffix', () => {
+  it('formats a number as a ratio with two decimals and an x suffix', () => {
     expect(formatCoverageRatio(1.41)).toBe('1.41x');
   });
 
@@ -60,7 +60,7 @@ describe('formatCoverageRatio', () => {
     expect(formatCoverageRatio(2.034)).toBe('2.03x');
   });
 
-  it('renders a dash when the ratio is null — the user has no essential expenses', () => {
+  it('shows a dash when the ratio is null, which means the user has no essential expenses', () => {
     expect(formatCoverageRatio(null)).toBe('—');
   });
 });

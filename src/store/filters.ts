@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 
-// The shape of a transaction filter and sort. This store holds the live
-// filter state, so the types it is built from are defined here too. The
-// transactions feature imports them from this store rather than the reverse.
+/*
+ * The makeup of a transaction filter and sort. This store holds the current
+ * filter choices, so the types behind it are defined here too. The
+ * transactions feature imports them from this store, not the other way round.
+ */
 export type TransactionSign = 'all' | 'inflow' | 'outflow';
 export type SortField = 'date' | 'amount' | 'merchant_name';
 export type SortDirection = 'asc' | 'desc';
@@ -13,11 +15,12 @@ export interface TransactionSort {
 }
 
 /**
- * UI state for the transactions table — what the user has narrowed down to,
- * what they're typing into the search box, and how the rows are ordered.
+ * What the analyst has chosen in the transactions table: the filters they
+ * have narrowed down to, what they are typing in the search box, and how the
+ * rows are sorted.
  *
- * Living in Zustand (not React Query) because nothing here comes from the
- * server: it's pure UI preference state, and many components read it.
+ * Kept in Zustand rather than React Query because none of it comes from the
+ * server. It is the analyst's own choices, and several components read it.
  */
 export interface FiltersState {
   categoryCodes: string[];

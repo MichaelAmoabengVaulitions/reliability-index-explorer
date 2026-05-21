@@ -65,7 +65,7 @@ describe('reliabilityResponseSchema', () => {
     expect(reliabilityResponseSchema.safeParse(badBand).success).toBe(false);
   });
 
-  it('accepts a null income_coverage_ratio — the backend sends null when a user has no essential expenses', () => {
+  it('accepts a null income_coverage_ratio, which the backend sends when a user has no essential expenses', () => {
     const noEssentials = {
       ...validReliabilityResponse,
       metrics: { ...validReliabilityResponse.metrics, income_coverage_ratio: null },

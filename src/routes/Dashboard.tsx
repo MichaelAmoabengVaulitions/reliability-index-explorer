@@ -13,12 +13,12 @@ import { ErrorBoundary } from '@/ui/ErrorBoundary';
  * Dashboard view for a single user.
  *
  * The user id comes from the URL (the :userId part in /users/:userId). We
- * copy it into the selected-user store so other code can read it directly
- * from the store, rather than each component having to ask the router.
+ * copy it into the selected-user store so other code can read it from the
+ * store, rather than each component having to ask the router.
  *
- * Each feature sits inside its own error boundary keyed on the user id, so
- * a single feature crashing keeps the rest of the dashboard up — and a fresh
- * pick of user clears whatever error was caught.
+ * Each feature sits inside its own error catcher tied to the user id, so one
+ * feature crashing leaves the rest of the dashboard working, and picking a
+ * different user clears whatever error was caught.
  */
 export function Dashboard() {
   const { userId } = useParams<{ userId: string }>();

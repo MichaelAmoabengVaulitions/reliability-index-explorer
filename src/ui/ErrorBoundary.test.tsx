@@ -9,8 +9,10 @@ function Boom(): never {
 }
 
 beforeEach(() => {
-  // React logs caught errors via console.error; silence it for these tests so
-  // the expected stack traces don't drown out real failures.
+  /*
+   * React logs caught errors via console.error; silence it for these tests so
+   * the expected stack traces don't drown out real failures.
+   */
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
 });
 

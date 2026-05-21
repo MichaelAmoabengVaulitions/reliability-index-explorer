@@ -1,15 +1,17 @@
 import type { ReliabilityResponse, ScoringMetrics } from '@/api/schemas';
 
 interface ReliabilityOverrides {
-  /** Top-level fields to replace on the response. */
+  /** Fields to replace on the response itself. */
   response?: Partial<Omit<ReliabilityResponse, 'metrics'>>;
-  /** Metric fields to replace, merged onto the baseline metrics. */
+  /** Metric fields to replace, applied on top of the standard metrics. */
   metrics?: Partial<ScoringMetrics>;
 }
 
-// Mirrors the example response in docs/openapi.yaml so tests assert against a
-// stable baseline. Pass overrides to exercise a specific edge case — for
-// example, a null income_coverage_ratio for a user with no essential expenses.
+/*
+ * Matches the example response in docs/openapi.yaml, so tests check against a
+ * fixed, known set of values. Pass overrides to set up a particular case, for
+ * example a null income_coverage_ratio for a user with no essential expenses.
+ */
 export function buildReliabilityResponse(
   overrides: ReliabilityOverrides = {},
 ): ReliabilityResponse {

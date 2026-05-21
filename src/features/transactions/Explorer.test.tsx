@@ -37,8 +37,10 @@ describe('Explorer', () => {
       },
       { timeout: 4000 },
     );
-    // The fixture builds 2000 transactions for the default scoring window; both
-    // "visible" and "total" land on 2000 when no filters are applied.
+    /*
+     * The fixture builds 2000 transactions for the default scoring window; both
+     * "visible" and "total" land on 2000 when no filters are applied.
+     */
     expect(screen.getAllByText('2000')).toHaveLength(2);
   });
 });

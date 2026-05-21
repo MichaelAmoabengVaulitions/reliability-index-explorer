@@ -35,7 +35,7 @@ afterEach(() => {
   useSelectedUser.getState().setFrom(todayAsIsoDate());
 });
 
-describe('useUrlSync — hydration on mount', () => {
+describe('useUrlSync: reading the URL into the stores on first load', () => {
   it('reads the from date from the URL and pushes it into the selected-user store', () => {
     renderWithRouter('/?from=2026-02-20');
     expect(useSelectedUser.getState().from).toBe('2026-02-20');
@@ -46,7 +46,7 @@ describe('useUrlSync — hydration on mount', () => {
     expect(useFilters.getState().categoryCodes).toEqual(['5411', '4900']);
   });
 
-  it('hydrates a valid sign value but ignores unknown values rather than corrupting the store', () => {
+  it('reads a valid sign value, and ignores an unknown one rather than putting bad data in the store', () => {
     renderWithRouter('/?sign=inflow');
     expect(useFilters.getState().sign).toBe('inflow');
 
@@ -55,7 +55,7 @@ describe('useUrlSync — hydration on mount', () => {
     expect(useFilters.getState().sign).toBe('all');
   });
 
-  it('hydrates the search string verbatim', () => {
+  it('reads the search string exactly as given', () => {
     renderWithRouter('/?search=Amazon');
     expect(useFilters.getState().search).toBe('Amazon');
   });
@@ -70,7 +70,7 @@ describe('useUrlSync — hydration on mount', () => {
   });
 });
 
-describe('useUrlSync — writeback when a store changes', () => {
+describe('useUrlSync: writing the URL back when a store changes', () => {
   it('does not update the URL until the debounce delay has passed', async () => {
     renderWithRouter('/');
 
@@ -101,7 +101,7 @@ describe('useUrlSync — writeback when a store changes', () => {
     expect(screen.getByTestId('params').textContent).not.toContain('sort=');
   });
 
-  it('coalesces several rapid changes into one URL write, so each keystroke does not push a history entry', async () => {
+  it('combines several rapid changes into one URL write, so each keystroke does not add a back-button step', async () => {
     renderWithRouter('/');
 
     act(() => {

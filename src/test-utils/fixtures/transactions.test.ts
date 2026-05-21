@@ -10,7 +10,7 @@ describe('buildTransactions', () => {
     expect(result).toHaveLength(50);
   });
 
-  it('is deterministic — same inputs produce identical output', () => {
+  it('produces the same output every time for the same inputs', () => {
     const first = buildTransactions(50, { userId: 'user_1001' });
     const second = buildTransactions(50, { userId: 'user_1001' });
     expect(first).toEqual(second);
@@ -34,7 +34,7 @@ describe('buildTransactions', () => {
     expect(result.some((tx) => tx.amount > 0)).toBe(true);
   });
 
-  it('is not perfectly sorted by date — caller must sort', () => {
+  it('does not return the data perfectly sorted by date; the caller must sort', () => {
     const result = buildTransactions(200);
     const sortedByDate = [...result].sort((a, b) => a.date.localeCompare(b.date));
     expect(result).not.toEqual(sortedByDate);

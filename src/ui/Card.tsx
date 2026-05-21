@@ -6,14 +6,14 @@ interface CardProps {
   children: ReactNode;
   /** Screen-reader name for the card. Use this when no visible title is shown. */
   ariaLabel?: string;
-  /** Extra Tailwind classes to merge onto the outer container, for layout overrides. */
+  /** Extra Tailwind classes to add to the outer container, for layout tweaks. */
   className?: string;
 }
 
 /**
  * A boxed panel with an optional title bar (title on the left, action buttons
  * on the right) and a body that holds whatever children you pass in. Used
- * wherever a feature needs its own framed area on the dashboard.
+ * wherever a feature needs its own boxed area on the dashboard.
  */
 export function Card({ title, actions, children, ariaLabel, className }: CardProps) {
   return (

@@ -11,8 +11,11 @@ interface ScoreGaugeProps {
   size?: number;
 }
 
-// Geometry constants for the half-circle gauge. The arc sweeps from 9 o'clock
-// (180 degrees) to 3 o'clock (360 degrees), i.e. the bottom half of a circle.
+/*
+ * Numbers that lay out the half-circle gauge. The arc sweeps from 9 o'clock
+ * (180 degrees) round to 3 o'clock (360 degrees), which is the bottom half of
+ * a circle.
+ */
 const QUARTER_TURN_DEGREES = 90;
 const HALF_CIRCLE_DEGREES = 180;
 const ARC_START_DEGREES = HALF_CIRCLE_DEGREES;
@@ -22,9 +25,11 @@ const DEFAULT_SIZE = 320;
 const STROKE_WIDTH = 28;
 const MIN_SCORE = 0;
 const MAX_SCORE = 100;
-// The three coloured arc segments. Their boundaries are the score band
-// thresholds from config, so the coloured zone the needle sits in always
-// agrees with the band the backend reports.
+/*
+ * The three coloured parts of the arc. Each one starts and ends at a score
+ * band cut-off from config, so the coloured zone the needle sits in always
+ * matches the band the backend reports.
+ */
 const SEGMENTS = [
   { fromScore: MIN_SCORE, toScore: config.scoring.mediumBandMin, color: colors.band.low },
   {
@@ -41,7 +46,7 @@ const BAND_TEXT_COLOR: Record<ReliabilityResponse['score_band'], string> = {
 };
 
 function polarToCartesian(centerX: number, centerY: number, radius: number, degrees: number) {
-  // Standard SVG trig: subtract a quarter turn so 0 degrees points up.
+  // SVG angles start at 3 o'clock, so subtract a quarter turn to make 0 degrees point up.
   const radians = ((degrees - QUARTER_TURN_DEGREES) * Math.PI) / HALF_CIRCLE_DEGREES;
   return { x: centerX + radius * Math.cos(radians), y: centerY + radius * Math.sin(radians) };
 }

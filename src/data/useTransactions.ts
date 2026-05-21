@@ -6,11 +6,13 @@ import { queryKeys } from './queryKeys';
 import { toState, type TransactionState } from './transactionState';
 
 /**
- * What useTransactions stores in the React Query cache while loading and once done.
+ * What useTransactions keeps in the React Query cache while loading and once
+ * done.
  *
- * `state` is the normalized transactions (built up only at the end). `loaded` and
- * `total` track progress through the cursor pagination so the UI can render a
- * "loaded N of M" indicator before every page arrives.
+ * `state` holds the transactions, arranged so one can be found straight away
+ * by its id. `loaded` and `total` track how far the page-by-page load has
+ * got, so the screen can show a "loaded N of M" line before every page has
+ * arrived.
  */
 export interface TransactionsQueryData {
   state: TransactionState;
@@ -25,12 +27,12 @@ const EMPTY_TRANSACTIONS_DATA: TransactionsQueryData = {
 };
 
 /**
- * Fetches every transaction page for a user and window, normalising the result
- * for cheap lookups by id.
+ * Fetches every page of transactions for a user and window, and arranges the
+ * result so a transaction can be found straight away by its id.
  *
- * Each page's progress counts are written back into the same cache entry via
- * setQueryData, so any subscribed component re-renders with the latest "N of M"
- * even while the query is still fetching.
+ * After each page, the progress counts are saved back to the same cached
+ * value, so any component reading this query redraws with the latest "N of M"
+ * while later pages are still loading.
  */
 export function useTransactions(
   userId: string,
@@ -42,8 +44,11 @@ export function useTransactions(
 
   return useQuery<TransactionsQueryData, Error>({
     queryKey,
-    // Skip the fetch when there is no user or no window date yet, so we do
-    // not hit "/api/users//transactions" while the URL or store is hydrating.
+    /*
+     * Skip the fetch when there is no user or window date yet, so we do not
+     * call "/api/users//transactions" before the URL has been read into the
+     * stores.
+     */
     enabled: userId.length > 0 && from.length > 0 && to.length > 0,
     queryFn: async () => {
       const transactions = await fetchAllTransactions({

@@ -3,10 +3,10 @@ import { Activity, LayoutDashboard } from 'lucide-react';
 import { UserPicker } from './UserPicker';
 
 /**
- * Left-hand navigation column. Holds the brand mark, the user picker,
- * and the navigation links. The "Dashboard" link is the only entry today
- * — we keep it as a styled list so future sections (Reports, Settings)
- * slot in without re-laying-out the sidebar.
+ * The left-hand navigation column. It holds the logo, the user picker and the
+ * navigation links. "Dashboard" is the only link today; it is kept as a
+ * styled list so more sections (Reports, Settings) can be added later without
+ * rearranging the sidebar.
  */
 export function Sidebar() {
   return (
@@ -43,7 +43,7 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto pt-6">
-        <p className="px-2 text-xs text-sidebar-muted">v0.1 — analyst preview</p>
+        <p className="px-2 text-xs text-sidebar-muted">v0.1 analyst preview</p>
       </div>
     </aside>
   );

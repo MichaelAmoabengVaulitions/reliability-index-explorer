@@ -27,10 +27,10 @@ describe('Overview', () => {
     expect(screen.getByText('MEDIUM')).toBeInTheDocument();
   });
 
-  it('renders the scoring window dates', async () => {
+  it('shows the scoring window dates', async () => {
     renderWithProviders(<Overview />);
     await waitFor(() => {
-      expect(screen.getByText(/Sep 2025 – Feb 2026/)).toBeInTheDocument();
+      expect(screen.getByText(/Sep 2025 to Feb 2026/)).toBeInTheDocument();
     });
   });
 
@@ -39,8 +39,10 @@ describe('Overview', () => {
     await waitFor(() => {
       expect(screen.getByText('Income present in 5/6 months')).toBeInTheDocument();
     });
-    // Match the full driver strings so the assertion does not collide with the
-    // static tile descriptions (which also mention "covers essential expenses").
+    /*
+     * Match the full driver strings so the assertion does not collide with the
+     * static tile descriptions (which also mention "covers essential expenses").
+     */
     expect(screen.getByText('Income covers essential expenses (1.41x)')).toBeInTheDocument();
     expect(screen.getByText('Essential payments detected consistently')).toBeInTheDocument();
   });
@@ -57,7 +59,7 @@ describe('Overview', () => {
     });
     // The static description still tells the analyst what the tile measures.
     expect(screen.getByText('How far income covers essential expenses.')).toBeInTheDocument();
-    // The score still renders — one null metric does not break the card.
+    // The score still shows; one null metric does not break the card.
     expect(screen.getByText('64')).toBeInTheDocument();
   });
 });

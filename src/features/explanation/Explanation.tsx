@@ -6,11 +6,13 @@ import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
 
-// A short lead-in per band. The specifics that make an explanation useful
-// are the per-user driver rows below, not this sentence.
+/*
+ * A short opening line for each band. The detail that makes an explanation
+ * useful is in the driver rows below, not in this sentence.
+ */
 const BAND_SUMMARY: Record<ReliabilityResponse['score_band'], string> = {
   LOW: 'A low score. The signals below show what is holding it back.',
-  MEDIUM: 'A middle-band score — a mix of strengths and risks, listed below.',
+  MEDIUM: 'A middle-band score: a mix of strengths and risks, listed below.',
   HIGH: 'A high score. The signals below show a consistent profile.',
 };
 
@@ -74,11 +76,11 @@ function Column({ title, drivers, emptyHint }: ColumnProps) {
 }
 
 /**
- * Splits the API's pre-rendered driver strings into "what's helping",
- * "what's hurting", and a Notes column for ones with no points value.
+ * Splits the API's driver strings into "what's helping", "what's hurting",
+ * and a Notes column for the ones with no points value.
  *
- * The summary paragraph above the columns switches text based on the band
- * so the page always opens with a sentence the analyst can read out loud.
+ * The short line above the columns changes with the band, so the page always
+ * opens with a sentence the analyst can read out loud.
  */
 export function Explanation() {
   const userId = useSelectedUser((state) => state.userId);

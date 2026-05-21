@@ -156,7 +156,7 @@ describe('fetchAvailableUserIds', () => {
     expect(await fetchAvailableUserIds()).toEqual(['user_1001']);
   });
 
-  it('throws an ApiError when the discovery endpoint itself fails — a network outage is not the same as an unfamiliar shape', async () => {
+  it('throws an ApiError when the discovery endpoint itself fails, since the network being down is not the same as an unexpected response', async () => {
     server.use(
       http.get(`${config.api.baseUrl}/`, () =>
         HttpResponse.json({ error: 'boom' }, { status: 500 }),

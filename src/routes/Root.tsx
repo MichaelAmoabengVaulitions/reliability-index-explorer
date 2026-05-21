@@ -12,8 +12,8 @@ import { UserPicker } from './UserPicker';
  * On the left is the sidebar (logo, user picker, navigation). On the right
  * is the main content area: a small top bar with the current user and the
  * scoring window, then the per-page content underneath. We call useUrlSync
- * here so the URL and the in-memory stores start staying in step the moment
- * the app loads, before any feature is drawn.
+ * here so the URL and the stores start staying in step the moment the app
+ * loads, before any feature is drawn.
  */
 export function Root() {
   useUrlSync();

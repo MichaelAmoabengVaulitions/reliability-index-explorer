@@ -1,7 +1,10 @@
 import type { Transaction } from '@/api/schemas';
 
-// Returns a single transaction with the overrides merged onto a stable baseline.
-// Useful for tests that need to construct a specific shape without restating every field.
+/*
+ * Returns a single transaction, starting from a fixed set of fields and
+ * applying any overrides on top. Useful in tests that need a particular
+ * transaction without spelling out every field.
+ */
 export function buildTransaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
     id: 'tx_test',
@@ -62,9 +65,11 @@ const MERCHANT_TEMPLATES: readonly MerchantTemplate[] = [
   { category: '5732', name: 'Electronics Store', description: 'Misc purchase', minAmount: -500, maxAmount: -50 },
 ];
 
-// Returns a function that yields the next pseudo-random number in [0, 1) on each call.
-// Same seed always produces the same sequence — that's what makes fixture output reproducible.
-// Implementation: Mulberry32, a 32-bit PRNG (small, fast, non-cryptographic).
+/*
+ * Returns a function that gives the next random-looking number from 0 up to
+ * (but not including) 1 each time it is called. The same seed always gives
+ * the same sequence, which is what makes the fake data the same on every run.
+ */
 function createSeededRng(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
@@ -76,9 +81,11 @@ function createSeededRng(seed: number): () => number {
   };
 }
 
-// Hashes a string into a 32-bit unsigned integer so different option combinations
-// deterministically map to different RNG seeds.
-// Implementation: FNV-1a (small, fast, non-cryptographic).
+/*
+ * Turns a string into a number, so a different combination of options gets a
+ * different starting seed for the random number generator above. The same
+ * string always gives the same number.
+ */
 function hashString(input: string): number {
   let hash = 2166136261;
   for (let i = 0; i < input.length; i++) {
@@ -149,7 +156,10 @@ function buildRandomExpense(
   rng: () => number,
 ): Transaction {
   const templateIdx = Math.floor(rng() * MERCHANT_TEMPLATES.length);
-  // bounds-checked: templateIdx ∈ [0, MERCHANT_TEMPLATES.length)
+  /*
+   * templateIdx is always a valid position in the array: rng() returns a
+   * number below 1, so flooring the multiplication keeps it in range.
+   */
   const template = MERCHANT_TEMPLATES[templateIdx]!;
   const dayOffset = Math.floor(rng() * (totalDays + 1));
   const day = new Date(fromDate.getTime() + dayOffset * MS_PER_DAY);
@@ -173,13 +183,16 @@ function buildRandomExpense(
   };
 }
 
-// Swap adjacent pairs at the given ratio so callers see arbitrarily ordered data.
+/*
+ * Swaps some neighbouring pairs of items so callers get the data in a
+ * mixed-up order, the way a real transaction response can arrive.
+ */
 function shuffleAdjacent<T>(items: T[], rng: () => number, ratio: number): T[] {
   const result = items.slice();
   const swapCount = Math.floor(result.length * ratio);
   for (let i = 0; i < swapCount; i++) {
     const idx = Math.floor(rng() * Math.max(0, result.length - 1));
-    // both indices ∈ [0, result.length - 1] by construction
+    // idx and idx + 1 are both valid positions in the array here.
     const a = result[idx]!;
     const b = result[idx + 1]!;
     result[idx] = b;

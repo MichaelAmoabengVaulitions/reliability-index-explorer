@@ -10,7 +10,7 @@ describe('parseISODate', () => {
 });
 
 describe('formatMonth', () => {
-  it('renders a date as the abbreviated month and year', () => {
+  it('formats a date as the short month and year', () => {
     expect(formatMonth(new Date('2026-02-20T00:00:00.000Z'))).toBe('Feb 2026');
   });
 });
@@ -26,11 +26,11 @@ describe('windowFor', () => {
     expect(windowFor('2026-02-20')).toEqual({ start: '2025-09-01', end: '2026-02-20' });
   });
 
-  it('anchors the start to the first of the month', () => {
+  it('sets the start to the first of the month', () => {
     expect(windowFor('2026-03-15')).toEqual({ start: '2025-10-01', end: '2026-03-15' });
   });
 
-  it('handles the year boundary correctly', () => {
+  it('handles a window that crosses into the previous year', () => {
     expect(windowFor('2026-01-01')).toEqual({ start: '2025-08-01', end: '2026-01-01' });
   });
 });
@@ -50,8 +50,11 @@ describe('todayAsIsoDate', () => {
   });
 
   it('uses the UTC calendar day even when local time is on the previous day', () => {
-    // 2026-05-20 00:30 UTC is still 2026-05-19 in any negative-offset timezone, but the
-    // store and the backend both speak UTC, so we always return the UTC calendar day.
+    /*
+     * At 2026-05-20 00:30 UTC it is still 2026-05-19 in time zones behind UTC,
+     * but the stores and the backend both use UTC, so we always return the
+     * UTC calendar day.
+     */
     vi.setSystemTime(new Date('2026-05-20T00:30:00.000Z'));
     expect(todayAsIsoDate()).toBe('2026-05-20');
   });

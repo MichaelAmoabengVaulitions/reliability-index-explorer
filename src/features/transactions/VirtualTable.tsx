@@ -13,19 +13,21 @@ interface VirtualTableProps {
 const TABLE_HEIGHT_PX = 480;
 
 /**
- * Long-list table that only renders the rows currently in view, so a
- * thousand-row scroll still touches at most ~20 DOM nodes at once.
+ * A long list that only draws the rows currently in view, so scrolling
+ * thousands of rows still keeps only about 20 of them on the page at once.
  *
- * Uses TanStack Virtual under the hood. The row height comes from
- * src/config.ts so any tuning happens in one place.
+ * Built on TanStack Virtual. The row height comes from src/config.ts so it
+ * can be changed in one place.
  */
 export function VirtualTable({ transactions }: VirtualTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const rowHeight = config.ui.virtualRowHeightPx;
 
-  // TanStack Virtual's useVirtualizer returns functions the React Compiler
-  // cannot memoize safely. We use it directly and call the returned helpers
-  // each render, which is the library's recommended pattern.
+  /*
+   * TanStack Virtual's useVirtualizer returns functions the React Compiler
+   * cannot safely cache. We call them again on every redraw instead, which is
+   * the way the library recommends using it.
+   */
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: transactions.length,

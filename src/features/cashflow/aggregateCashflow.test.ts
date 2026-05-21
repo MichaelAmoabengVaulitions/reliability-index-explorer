@@ -32,7 +32,7 @@ describe('aggregateCashflow', () => {
     expect(result[0]?.net).toBe(550);
   });
 
-  it('sorts chronologically by month even when input is shuffled', () => {
+  it('sorts the months oldest first even when the input is shuffled', () => {
     const result = aggregateCashflow([
       buildTransaction({ id: 'tx_1', date: '2026-03-15', amount: 100 }),
       buildTransaction({ id: 'tx_2', date: '2026-01-20', amount: 200 }),

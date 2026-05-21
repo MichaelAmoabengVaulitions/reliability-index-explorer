@@ -8,9 +8,9 @@ import { queryKeys } from './queryKeys';
 /**
  * Fetches the reliability score for a user and a window-start date.
  *
- * Errors thrown by fetchReliability (ApiError, ValidationError) flow through
- * to result.error, so components can render typed error states instead of
- * wrapping the call in try/catch.
+ * A failed request, or a response that does not match what we expect, comes
+ * back on result.error, so a component can show an error message and a retry
+ * button instead of handling the call itself.
  */
 export function useReliability(
   userId: string,
@@ -19,8 +19,11 @@ export function useReliability(
   return useQuery<ReliabilityResponse, Error>({
     queryKey: queryKeys.reliability(userId, from),
     queryFn: () => fetchReliability(userId, from),
-    // Skip the fetch when there is no user or no window date yet, so we do
-    // not hit "/api/users//reliability" while the URL or store is hydrating.
+    /*
+     * Skip the fetch when there is no user or window date yet, so we do not
+     * call "/api/users//reliability" before the URL has been read into the
+     * stores.
+     */
     enabled: userId.length > 0 && from.length > 0,
   });
 }

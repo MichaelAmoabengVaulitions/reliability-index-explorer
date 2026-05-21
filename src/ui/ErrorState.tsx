@@ -9,8 +9,8 @@ interface ErrorStateProps {
 
 /**
  * Shown when something failed and the visitor can try again. When the parent
- * passes onRetry, the button gives them a way forward — never a dead end
- * (CLAUDE.md rule 6).
+ * passes onRetry, the button gives them a way forward, so the screen is never
+ * a dead end.
  */
 export function ErrorState({
   title,

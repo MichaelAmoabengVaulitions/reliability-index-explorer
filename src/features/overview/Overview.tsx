@@ -17,9 +17,11 @@ const BAND_STYLES = {
   HIGH: { chip: 'bg-emerald-100 text-emerald-800', label: 'Strong reliability' },
 } as const;
 
-// One plain-language line per metric tile, telling the analyst what the
-// number measures. The wording follows the backend's own driver phrasing
-// so we describe the metric rather than invent a meaning for it.
+/*
+ * One plain line under each tile, saying what the number measures. The
+ * wording follows the backend's own driver phrasing, so we describe the
+ * number rather than invent a meaning for it.
+ */
 const METRIC_DESCRIPTIONS = {
   incomeRegularity: 'Share of months that had income.',
   incomeCoverage: 'How far income covers essential expenses.',
@@ -50,12 +52,12 @@ function MetricTile({ label, value, description }: MetricTileProps) {
 }
 
 /**
- * The Reliability Overview card — the headline view for a user.
+ * The Reliability Overview card, the headline view for a user.
  *
- * Shows the score gauge, the band label, the scoring window dates, six
- * metric tiles drawn from the reliability response, and the first three
- * driver strings. The "See all explanations" link jumps the page to the
- * Explanation Panel further down.
+ * Shows the score gauge, the band label, the scoring window dates, six tiles
+ * of key numbers from the reliability response, and the first three driver
+ * lines. The "See all explanations" link jumps the page down to the Score
+ * Explanation card.
  */
 export function Overview() {
   const userId = useSelectedUser((state) => state.userId);
@@ -101,7 +103,7 @@ export function Overview() {
 
   const { reliability_index: score, score_band: band, metrics, drivers, currency } = response;
   const window = windowFor(from);
-  const windowLabel = `${formatMonth(parseISODate(window.start))} – ${formatMonth(parseISODate(window.end))}`;
+  const windowLabel = `${formatMonth(parseISODate(window.start))} to ${formatMonth(parseISODate(window.end))}`;
   const bandStyle = BAND_STYLES[band];
 
   return (
