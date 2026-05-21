@@ -333,23 +333,24 @@ depend on the real backend being up.
 
 ## AI usage disclosure
 
-This project was built with heavy use of an AI coding assistant (Claude),
-which the brief explicitly permits.
+The brief explicitly permits using AI, so this is a plain account of how it
+was used.
 
-The AI was used throughout: planning the structure, writing the components,
-the helper functions and the tests, fixing problems found while testing
-against the real backend, and drafting this README.
+The work was planned before any code was written, and the plan itself went
+through several rounds of review and revision. The direction was the
+developer's throughout: which libraries to use, how to structure the app,
+what to build and in what order, and where to change course.
 
-The work was directed step by step. The decisions about which libraries to
-use, how to structure the code, what to build and in what order, and where to
-correct course were made by the developer and given to the AI as direction.
-The developer reviewed the changes, ran the type checks, the linter and the
-tests after each step, and pushed back when the output missed the mark.
+Claude, an AI coding assistant, then wrote the code to that plan. Every change
+was watched closely: each change was read, run through the type checks, the
+linter and the tests, and corrected wherever Claude made a mistake or missed
+the mark. The developer led the work and made the decisions; Claude was the
+assistant carrying them out under close review.
 
-Two examples of that direction shaping the result: the AI's first comments
-were rewritten several times because they used jargon a reader would have to
-look up, and several problems (the way pages of data are requested, a field
-that could be empty, the score gauge colour bands) were found by testing
+Two examples of that review shaping the result: Claude's first comments were
+rewritten several times because they used jargon a reader would have to look
+up, and several backend problems (the way pages of data are requested, a
+field that can be empty, the score gauge colour bands) were caught by checking
 against the live backend and the API specification rather than trusting the
 first build.
 
