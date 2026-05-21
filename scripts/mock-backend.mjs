@@ -1,28 +1,30 @@
-// Local mock backend for the Reliability Index Explorer.
-//
-// Why this exists: the hosted backend's live updates address does not stream.
-// It sits behind an Amazon gateway that holds the whole response back instead
-// of sending it piece by piece, so the live updates feature cannot be watched
-// working against it. This small server stands in for the backend so the
-// feature can be run and seen in a real browser.
-//
-// It answers the four things the app asks for:
-//   GET /                                  the list of users
-//   GET /api/users/:id/reliability         a reliability score
-//   GET /api/users/:id/transactions        a page of transactions
-//   GET /api/users/:id/transaction-events  the live updates stream
-//
-// The live updates stream sends events in the exact format the API
-// specification documents (docs/openapi.yaml: id, event, data lines).
-//
-// Three optional settings scale it up for stress testing how far the app
-// holds up:
-//   MOCK_TX_COUNT           transactions per user                (default 60)
-//   MOCK_EVENT_TOTAL        live events before the stream closes  (default 5)
-//   MOCK_EVENT_INTERVAL_MS  milliseconds between live events      (default 3000)
-//
-// Run it:                          yarn mock
-// Then run the app pointed at it:  yarn dev:mock
+/*
+ * Local mock backend for the Reliability Index Explorer.
+ *
+ * Why this exists: the hosted backend's live updates endpoint does not stream.
+ * It sits behind an Amazon gateway that holds the whole response back instead
+ * of sending it piece by piece, so the live updates feature cannot be watched
+ * working against it. This small server stands in for the backend so the
+ * feature can be run and seen in a real browser.
+ *
+ * It answers the four things the app asks for:
+ *   GET /                                  the list of users
+ *   GET /api/users/:id/reliability         a reliability score
+ *   GET /api/users/:id/transactions        a page of transactions
+ *   GET /api/users/:id/transaction-events  the live updates stream
+ *
+ * The live updates stream sends events in the exact format the API
+ * specification documents (docs/openapi.yaml: id, event, data lines).
+ *
+ * Three optional settings scale it up for stress testing how far the app
+ * holds up:
+ *   MOCK_TX_COUNT           transactions per user                (default 60)
+ *   MOCK_EVENT_TOTAL        live events before the stream closes  (default 5)
+ *   MOCK_EVENT_INTERVAL_MS  milliseconds between live events      (default 3000)
+ *
+ * Run it:                          yarn mock
+ * Then run the app pointed at it:  yarn dev:mock
+ */
 
 import { createServer } from 'node:http';
 
@@ -32,8 +34,11 @@ const USER_IDS = Array.from({ length: 10 }, (_, index) => `user_${1001 + index}`
 const FIRST_EVENT_DELAY_MS = 1000;
 const MS_PER_DAY = 86400000;
 
-// Reads a number from the environment. Written as a helper so a value of 0 — a
-// valid choice for the event gap — is kept rather than treated as missing.
+/*
+ * Reads a number from the environment. Written as a helper so a value of 0,
+ * which is a valid choice for the event gap, is kept rather than treated as
+ * missing.
+ */
 function numberSetting(name, fallback) {
   const raw = process.env[name];
   if (raw === undefined || raw === '') return fallback;
@@ -76,8 +81,10 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// The id for the nth transaction of a user. Padded wide so a large
-// MOCK_TX_COUNT still sorts and reads cleanly.
+/*
+ * The id for the nth transaction of a user. Padded wide so a large
+ * MOCK_TX_COUNT still sorts and reads cleanly.
+ */
 function transactionId(userId, n) {
   return `tx_${userId}_${String(n).padStart(7, '0')}`;
 }
@@ -121,21 +128,27 @@ function addDays(fromIso, days) {
   return date.toISOString().slice(0, 10);
 }
 
-// Keeps a date inside the asked-for range so every transaction lands in the
-// scoring window the app is showing.
+/*
+ * Keeps a date inside the asked-for range so every transaction lands in the
+ * scoring window the app is showing.
+ */
 function clampDate(candidate, fromIso, toIso) {
   if (candidate < fromIso) return fromIso;
   if (candidate > toIso) return toIso;
   return candidate;
 }
 
-// Built sets are kept here so a large MOCK_TX_COUNT is generated once per user
-// and window, not rebuilt on every page request.
+/*
+ * Built sets are kept here so a large MOCK_TX_COUNT is generated once per user
+ * and window, not rebuilt on every page request.
+ */
 const transactionCache = new Map();
 
-// Builds MOCK_TX_COUNT transactions for one user and window: a salary and a
-// rent payment for each month, then everyday expenses spread across the window
-// to fill the rest.
+/*
+ * Builds MOCK_TX_COUNT transactions for one user and window: a salary and a
+ * rent payment for each month, then everyday expenses spread across the window
+ * to fill the rest.
+ */
 function buildTransactions(userId, fromIso, toIso) {
   const cacheKey = `${userId}|${fromIso}|${toIso}|${TX_COUNT}`;
   const cached = transactionCache.get(cacheKey);
@@ -219,8 +232,10 @@ function reliabilityResponse(userId, fromParam) {
   };
 }
 
-// Reads the from and to dates off the request, falling back to the six months
-// ending today when they are missing or malformed.
+/*
+ * Reads the from and to dates off the request, falling back to the six months
+ * ending today when they are missing or malformed.
+ */
 function windowFromQuery(url) {
   const from = url.searchParams.get('from');
   const to = url.searchParams.get('to');
@@ -250,10 +265,12 @@ function transactionsResponse(userId, url) {
 
 let connectionCount = 0;
 
-// Builds event number `index` of a connection's stream. Most are new
-// transactions; a few update or delete ones the page response already holds,
-// so their effect is visible. Events are built one at a time, so a very large
-// MOCK_EVENT_TOTAL never needs a large array held in memory.
+/*
+ * Builds event number `index` of a connection's stream. Most are new
+ * transactions; a few update or delete ones the page response already holds,
+ * so their effect is visible. Events are built one at a time, so a very large
+ * MOCK_EVENT_TOTAL never needs a large array held in memory.
+ */
 function buildEvent(userId, connectionId, index) {
   if (index % 12 === 0) {
     return { type: 'TRANSACTION_DELETED', transaction_id: transactionId(userId, 5) };
@@ -272,8 +289,10 @@ function buildEvent(userId, connectionId, index) {
       }),
     };
   }
-  // ADD events alternate between an outflow (an expense) and an inflow (money
-  // received), so the live stream shows both kinds of transaction.
+  /*
+   * ADD events alternate between an outflow (an expense) and an inflow (money
+   * received), so the live stream shows both kinds of transaction.
+   */
   const isInflowAdd = index % 2 === 0;
   const merchant = isInflowAdd
     ? INCOME_MERCHANTS[index % INCOME_MERCHANTS.length]
@@ -320,9 +339,11 @@ function streamEvents(req, res, userId) {
     if (sent <= 5 || sent % 500 === 0 || sent === EVENT_TOTAL) {
       console.log(`  ${userId}: event ${sent} of ${EVENT_TOTAL} (${event.type})`);
     }
-    // If the app is reading slower than we are sending, wait for its buffer to
-    // drain before continuing. This keeps the test honest: the mock sends as
-    // fast as the app can take, never faster.
+    /*
+     * If the app is reading slower than we are sending, wait for its buffer to
+     * drain before continuing. This keeps the test honest: the mock sends as
+     * fast as the app can take, never faster.
+     */
     if (flushed) {
       timer = setTimeout(sendNext, EVENT_INTERVAL_MS);
     } else {

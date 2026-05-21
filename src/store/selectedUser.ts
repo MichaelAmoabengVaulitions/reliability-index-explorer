@@ -3,11 +3,11 @@ import { create } from 'zustand';
 import { todayAsIsoDate } from '@/domain/dates';
 
 /**
- * Which user is being looked at, and the date that anchors their scoring window.
+ * Which user is being looked at, and the date the scoring window ends on.
  *
- * Stored separately from filter state so a category or sort change does not
- * accidentally invalidate the reliability or transactions queries (those queries
- * are keyed on userId + from + to).
+ * Kept apart from the filter choices so that changing a category or the sort
+ * order does not accidentally cause the reliability or transactions data to
+ * be fetched again (those are stored under a key made of userId, from and to).
  */
 export interface SelectedUserState {
   userId: string;

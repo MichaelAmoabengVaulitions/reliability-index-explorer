@@ -4,7 +4,7 @@ import { ErrorState } from './ErrorState';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
-  /** When this value changes, the boundary forgets any error it caught and shows the children again. */
+  /** When this value changes, the component forgets any error it caught and shows its children again. */
   resetKey?: unknown;
   /** Custom message to show after an error. When not set, we fall back to the standard ErrorState. */
   fallback?: (error: Error, reset: () => void) => ReactNode;
@@ -15,13 +15,13 @@ interface ErrorBoundaryState {
 }
 
 /**
- * If any component inside this boundary throws an error while drawing itself,
- * the boundary catches the error and shows a friendly recovery message
- * instead of the whole page going blank.
+ * If any component placed inside this one throws an error while drawing
+ * itself, this component catches the error and shows a friendly recovery
+ * message instead of the whole page going blank.
  *
- * Components inside should still report the errors they expect (for example,
- * a failed network request returned through React Query). This boundary is a
- * safety net for problems we did not anticipate.
+ * Components inside should still handle the errors they expect (for example,
+ * a failed network request reported through React Query). This is the safety
+ * net for problems we did not see coming.
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { caught: null };
@@ -31,9 +31,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    // We send the error to console.error so it shows up in the browser
-    // console and in test output. When we wire up a real logger later, we
-    // will report through that instead.
+    /*
+     * We send the error to console.error so it shows up in the browser
+     * console and in the test output. When a real logger is added later, the
+     * error will be reported through that instead.
+     */
     console.error('ErrorBoundary caught an error', error, info);
   }
 

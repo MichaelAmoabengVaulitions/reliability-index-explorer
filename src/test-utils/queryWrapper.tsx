@@ -4,9 +4,9 @@ import { type ReactElement, type ReactNode } from 'react';
 /**
  * Wraps a hook or component under test with a fresh React Query client.
  *
- * A new client per test means the cache, in-flight queries, and retry state
- * cannot leak between tests. Retries are disabled so error paths surface
- * immediately instead of after several backoffs.
+ * A new client for each test means the cache, in-flight queries, and retry
+ * state cannot leak from one test into the next. Retries are turned off
+ * so a failed request shows up at once instead of after several slow retries.
  */
 export function createQueryWrapper(): ({ children }: { children: ReactNode }) => ReactElement {
   const queryClient = new QueryClient({

@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 
 interface EmptyStateProps {
-  /** Optional emoji or icon. It is decoration only — screen readers skip it. */
+  /** Optional emoji or icon. It is decoration only, so screen readers skip it. */
   icon?: ReactNode;
   title: string;
   description?: string;
@@ -10,9 +10,10 @@ interface EmptyStateProps {
 }
 
 /**
- * Shown when a feature has nothing to display — for example, no transactions
- * match the current filters, or no user is selected yet. Lets the parent
- * include an action so the visitor has a next step rather than a dead end.
+ * Shown when a feature has nothing to display, for example when no
+ * transactions match the current filters, or no user is selected yet. The
+ * parent can include an action so the visitor has a next step rather than a
+ * dead end.
  */
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (

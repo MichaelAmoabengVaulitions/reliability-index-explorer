@@ -11,7 +11,7 @@ import {
 } from '@/store/filters';
 
 interface FiltersProps {
-  /** Category codes actually present in the loaded transactions, drives the dropdown options. */
+  /** Category codes present in the loaded transactions; these become the dropdown options. */
   availableCategoryCodes: readonly string[];
 }
 
@@ -35,9 +35,10 @@ const SORT_OPTIONS: ReadonlyArray<{
 ];
 
 /**
- * Toolbar above the transaction list — category multi-select, inflow/outflow
- * toggle, search, and sort. Search keystrokes are debounced before they hit
- * the filter store so typing does not re-filter on every key press.
+ * The toolbar above the transaction list: a category picker, a money in/out
+ * toggle, a search box and a sort menu. Search keystrokes wait for a short
+ * pause before they reach the filter store, so the list is not re-filtered on
+ * every key press.
  */
 export function Filters({ availableCategoryCodes }: FiltersProps) {
   const categoryCodes = useFilters((state) => state.categoryCodes);
@@ -51,8 +52,10 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
 
   const [searchDraft, setSearchDraft] = useState(storeSearch);
 
-  // Push the local search draft into the store only after the visitor stops
-  // typing for the configured pause. Keeps re-filters off the keypress path.
+  /*
+   * Send what the visitor has typed into the store only after they pause for
+   * a moment, so the list is not re-filtered on every key press.
+   */
   useEffect(() => {
     const handle = setTimeout(() => {
       if (searchDraft !== storeSearch) setSearch(searchDraft);

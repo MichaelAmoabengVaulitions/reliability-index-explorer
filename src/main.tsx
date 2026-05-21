@@ -11,8 +11,10 @@ import { Root } from './routes/Root.tsx';
 
 import './index.css';
 
-// The #root element is declared in index.html, so the "!" — which tells
-// TypeScript "this is not null" — is safe here.
+/*
+ * The #root element is declared in index.html, so the "!" (which tells
+ * TypeScript the value is not null) is safe here.
+ */
 const rootElement = document.getElementById('root')!;
 const queryClient = createQueryClient();
 

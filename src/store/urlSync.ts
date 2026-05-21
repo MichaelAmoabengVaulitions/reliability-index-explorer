@@ -87,14 +87,16 @@ function serializeStoresToParams(): URLSearchParams {
  *
  * On first run, we read the URL once and copy its values into the stores.
  * After that, whenever a store changes we wait a short moment (so a burst
- * of keystrokes counts as one change) and then rewrite the URL. We replace
- * the current history entry rather than push a new one, so each keystroke
- * does not add a step to the browser's back button.
+ * of keystrokes counts as one change) and then rewrite the URL. We rewrite
+ * the current address in place rather than adding a new one, so each
+ * keystroke does not add a step to the browser's back button.
  */
 export function useUrlSync(): void {
   const [initialParams, setSearchParams] = useSearchParams();
-  // Save the URL values from the first render. The setup below reads that
-  // saved snapshot once, instead of re-running every time the URL changes.
+  /*
+   * Save the URL values from the first render. The setup below reads that
+   * saved snapshot once, instead of re-running every time the URL changes.
+   */
   const initialParamsRef = useRef(initialParams);
 
   useEffect(() => {

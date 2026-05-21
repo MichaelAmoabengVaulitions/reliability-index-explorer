@@ -20,10 +20,12 @@ import { VirtualTable } from './VirtualTable';
 
 const LOADING_ROW_COUNT = 8;
 
-// Visual + screen-reader treatment for each connection state of the live
-// updates stream. Colour alone is not the signal — every state also has a
-// short label so colour-blind users and screen-reader users get the same
-// information (CLAUDE.md rule 8).
+/*
+ * How each connection state of the live updates stream looks, and what it
+ * announces to screen readers. Colour is not the only signal: every state
+ * also has a short label, so colour-blind users and screen-reader users get
+ * the same information.
+ */
 const STREAM_BADGE_BY_STATUS: Record<
   StreamStatus,
   { dot: string; text: string; label: string }
@@ -54,10 +56,10 @@ function LiveBadge({ status }: { status: StreamStatus }) {
 /**
  * The transaction explorer feature card.
  *
- * Composes the toolbar (Filters), the virtualised list (VirtualTable), and a
- * count footer. All filtering and sorting is delegated to
- * applyTransactionFilters in ./filterTransactions.ts — this component only
- * assembles the inputs and renders the output.
+ * It puts together the toolbar (Filters), the long list (VirtualTable) and a
+ * count line. The filtering and sorting is all done by applyTransactionFilters
+ * in ./filterTransactions.ts; this component just gathers the inputs and shows
+ * the result.
  */
 export function Explorer() {
   const userId = useSelectedUser((state) => state.userId);
@@ -125,10 +127,12 @@ export function Explorer() {
 
   const totalCount = allTransactions.length;
   const visibleCount = visibleTransactions.length;
-  // How much live updates have changed the total, taken straight from the
-  // counts (current total minus the count the backend last reported). Derived
-  // this way, the indicator can never disagree with the number it sits next
-  // to: every added transaction moves both by one.
+  /*
+   * How much live updates have changed the total, worked out straight from
+   * the counts (current total minus the count the backend last reported).
+   * Worked out this way, the figure can never disagree with the total it sits
+   * next to: every added transaction moves both by one.
+   */
   const liveDelta = totalCount - (transactions.data?.total ?? totalCount);
 
   return (

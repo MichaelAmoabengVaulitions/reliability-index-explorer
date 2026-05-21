@@ -8,9 +8,12 @@ export interface TransactionFilters {
   sort?: TransactionSort;
 }
 
-// Returns a new array of transactions narrowed by the filters and ordered by the sort spec.
-// Cheap filters run first so the sort touches the smallest possible array. The input is
-// never mutated — callers can hold the reference safely after the call returns.
+/*
+ * Returns a new list of transactions, narrowed by the filters and put in the
+ * chosen sort order. The quick filters run first so the sort works on the
+ * smallest possible list. The list passed in is never changed, so a caller
+ * can keep using it safely after this returns.
+ */
 export function applyTransactionFilters(
   transactions: Transaction[],
   filters: TransactionFilters = {},
@@ -34,12 +37,16 @@ export function applyTransactionFilters(
   }
 
   if (filters.sort !== undefined) {
-    // We copy before sorting because Array.prototype.sort is in-place and we must not
-    // touch the input array (and at this point `result` may still be the input reference).
+    /*
+     * We copy the list before sorting, because sort reorders in place and we
+     * must not change the list passed in (result may still be that same list).
+     */
     result = result.slice().sort(compareBy(filters.sort));
   } else if (result === transactions) {
-    // No filters matched and no sort: still return a fresh array so the caller cannot
-    // accidentally mutate the input through the returned reference.
+    /*
+     * No filter matched and no sort: still return a fresh copy, so the caller
+     * cannot accidentally change the list passed in by changing what we return.
+     */
     result = result.slice();
   }
 
@@ -52,7 +59,7 @@ function compareBy(sort: TransactionSort): (a: Transaction, b: Transaction) => n
     return (a, b) => (a.amount - b.amount) * directionMultiplier;
   }
   if (sort.field === 'date') {
-    // Date strings are YYYY-MM-DD so localeCompare gives correct chronological order.
+    // Dates are YYYY-MM-DD text, so comparing them as text sorts them by date.
     return (a, b) => a.date.localeCompare(b.date) * directionMultiplier;
   }
   return (a, b) => a.merchant_name.localeCompare(b.merchant_name) * directionMultiplier;

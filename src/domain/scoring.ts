@@ -1,11 +1,13 @@
 export type DriverKind = 'positive' | 'risk' | 'neutral';
 
-// Shown in place of a coverage ratio the backend could not compute.
+// Shown in place of a coverage ratio the backend could not work out.
 const NO_RATIO_PLACEHOLDER = '—';
 
-// Renders the income-to-expenses coverage ratio for display. A number becomes
-// e.g. "1.41x"; null (which the backend sends when the user has no essential
-// expenses, so there is no ratio to compute) becomes a dash.
+/*
+ * Formats the income-to-expenses coverage ratio for display. A number shows
+ * as, for example, "1.41x". Null (which the backend sends when the user has
+ * no essential expenses, so there is no ratio) shows as a dash.
+ */
 export function formatCoverageRatio(value: number | null): string {
   if (value === null) {
     return NO_RATIO_PLACEHOLDER;
@@ -13,14 +15,17 @@ export function formatCoverageRatio(value: number | null): string {
   return `${value.toFixed(2)}x`;
 }
 
-// The backend's driver strings are short and a little terse (for example
-// "2.03x essential expenses"). We pair each one with a plain caption that
-// says what the line is telling the reader. The caption is matched on a
-// keyword in the driver, never on the numbers inside it — so if the backend
-// rephrases a driver we lose the caption rather than show a wrong one.
-//
-// Each entry: a pattern that identifies the scoring signal, and the plain
-// sentence to show under any driver that matches it. Checked in order.
+/*
+ * The backend's driver lines are short and a little compact (for example
+ * "2.03x essential expenses"). We pair each one with a plain caption that
+ * says what the line is telling the reader. The caption is matched on a
+ * keyword in the driver, never on the numbers inside it, so if the backend
+ * rewords a driver we simply lose the caption rather than show a wrong one.
+ *
+ * Each entry below is a pattern that recognises one kind of driver, and the
+ * plain sentence to show under any driver line that matches it. Checked in
+ * order.
+ */
 const DRIVER_CAPTIONS: ReadonlyArray<{ pattern: RegExp; caption: string }> = [
   { pattern: /income present/i, caption: 'How regularly income arrived during the window.' },
   {
@@ -38,8 +43,10 @@ const DRIVER_CAPTIONS: ReadonlyArray<{ pattern: RegExp; caption: string }> = [
   { pattern: /high-risk|risk category/i, caption: 'Spending in higher-risk categories.' },
 ];
 
-// Returns a plain one-line caption explaining what a driver line is about,
-// or undefined when the driver does not match any signal we recognise.
+/*
+ * Returns a plain one-line caption saying what a driver line is about, or
+ * undefined when the driver does not match any kind we recognise.
+ */
 export function captionForDriver(driver: string): string | undefined {
   return DRIVER_CAPTIONS.find((entry) => entry.pattern.test(driver))?.caption;
 }
@@ -51,14 +58,18 @@ export interface ParsedDriver {
   kind: DriverKind;
 }
 
-// Matches an optional sign, one or more digits, the literal " pts" suffix, and any
-// surrounding whitespace — anchored to the end of the string so a "(+5 pts)" appearing
-// mid-sentence is left alone.
+/*
+ * This pattern finds a points value like "(+5 pts)" or "(-10 pts)" at the
+ * very end of a driver string. It only matches at the end, so a "(+5 pts)"
+ * in the middle of a sentence is left alone.
+ */
 const POINTS_SUFFIX = /\s*\(([+-]?\d+)\s*pts\)\s*$/;
 
-// Splits the API's pre-rendered driver string into its descriptive label and an optional
-// numeric points contribution. The points value classifies the driver as positive, risk,
-// or neutral so the UI can render it under the right column.
+/*
+ * Splits a driver string from the API into its wording and an optional points
+ * value. The points decide whether the driver counts as positive, a risk, or
+ * neutral, so the UI can show it under the right column.
+ */
 export function parseDriver(raw: string): ParsedDriver {
   const match = raw.match(POINTS_SUFFIX);
   if (match === null) {

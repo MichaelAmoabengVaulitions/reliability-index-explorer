@@ -19,11 +19,13 @@ interface MonthBucket {
   outflow: number;
 }
 
-// Turns a list of transactions into one entry per calendar month, sorted oldest first.
-// The input may arrive in any order (the API explicitly does not promise chronological order)
-// so we bucket by month key and sort the result at the end.
-// When `from` and `to` are provided we also fill in any months in that window that have no
-// transactions, so a chart bound to the result has no gaps along its time axis.
+/*
+ * Turns a list of transactions into one entry per calendar month, oldest
+ * first. The transactions can arrive in any order (the API does not promise
+ * any order), so we group them by month and sort at the end. When from and to
+ * are given, we also add an empty entry for any month in that range with no
+ * transactions, so a chart drawn from the result has no gaps.
+ */
 export function aggregateCashflow(
   transactions: Transaction[],
   options: AggregateCashflowOptions = {},
@@ -61,9 +63,11 @@ export function aggregateCashflow(
     }));
 }
 
-// Yields a Date for the first of every calendar month that overlaps [from, to].
-// Lives next to aggregateCashflow because this is the only caller right now.
-// If a second caller appears it should be lifted into src/domain/dates.ts.
+/*
+ * Lists the first day of every calendar month between from and to. It lives
+ * next to aggregateCashflow because nothing else uses it; if something else
+ * needs it later, move it into src/domain/dates.ts.
+ */
 function listMonthsBetween(fromIso: string, toIso: string): Date[] {
   const result: Date[] = [];
   const from = parseISODate(fromIso);

@@ -15,10 +15,12 @@ interface SseHandlerOptions {
   delayMs?: number;
 }
 
-// Default response for the discovery endpoint — returns the one user id the
-// OpenAPI spec gives as an example. Tests that want to check a different
-// response (the other key name, or the fallback when neither key is present)
-// replace this with their own handler.
+/*
+ * Default response for the discovery endpoint: returns the one user id the
+ * API specification gives as an example. A test that wants a different
+ * response (the other field name, or the fallback when neither is present)
+ * replaces this with its own handler.
+ */
 export function discoveryHandler() {
   return http.get(`${config.api.baseUrl}/`, () => HttpResponse.json({ users: ['user_1001'] }));
 }
@@ -26,7 +28,7 @@ export function discoveryHandler() {
 export function reliabilityHandler() {
   return http.get(`${BASE_PATH}/reliability`, ({ request }) => {
     const url = new URL(request.url);
-    // treat empty value the same as missing — both are invalid
+    // An empty value counts the same as a missing one; both are invalid.
     if (!url.searchParams.get('from')) {
       return HttpResponse.json({ error: 'from is required' }, { status: 400 });
     }
@@ -57,8 +59,10 @@ export function transactionsHandler() {
   });
 }
 
-// We cap at the OpenAPI maximum so a client cannot ask the mock to return more than
-// the real API would, even by mistake.
+/*
+ * We cap at the maximum the API specification allows, so a client cannot ask
+ * the mock for more than the real API would return, even by mistake.
+ */
 function resolvePageSize(limitParam: string | null): number {
   if (limitParam === null) return DEFAULT_PAGE_SIZE;
   const parsed = Number(limitParam);
@@ -141,7 +145,10 @@ function formatSseFrame(id: number, event: TransactionEvent): string {
   return `id: ${id}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
 }
 
-// Reference IDs from the fixture so merge tests can assert "added/updated/removed by id".
+/*
+ * Uses ids from the fixture transactions so tests can check "added, updated
+ * or removed by id".
+ */
 function buildEventSequence(transactions: Transaction[]): TransactionEvent[] {
   const [first, second, third] = transactions.slice(0, 3);
   if (!first || !second || !third) return [];

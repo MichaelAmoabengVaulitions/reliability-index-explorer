@@ -72,7 +72,7 @@ describe('applyTransactionEvent', () => {
     expect(JSON.stringify(state)).toBe(snapshot);
   });
 
-  it('is idempotent — applying the same event twice yields the same result as once', () => {
+  it('applying the same event twice gives the same result as applying it once', () => {
     const state = toState([txOne]);
     const event: TransactionEvent = { type: 'TRANSACTION_ADDED', transaction: txTwo };
     const once = applyTransactionEvent(state, event);
@@ -106,7 +106,7 @@ describe('applyTransactionEvent', () => {
 });
 
 describe('toState and fromState', () => {
-  it('round-trips a list of transactions through the normalized representation', () => {
+  it('turns a list into the stored form and back into the same list', () => {
     const original = [txOne, txTwo];
     expect(fromState(toState(original))).toEqual(original);
   });

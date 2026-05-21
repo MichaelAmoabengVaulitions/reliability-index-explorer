@@ -1,15 +1,21 @@
 import type { Transaction, TransactionEvent } from '@/api/schemas';
 
-// Normalized shape: byId for O(1) lookup, allIds to preserve insertion order for rendering.
+/*
+ * Transactions are kept in two parts: byId, to find one straight away by its
+ * id, and allIds, to remember the order they should appear in.
+ */
 export interface TransactionState {
   byId: Record<string, Transaction>;
   allIds: string[];
 }
 
-// Folds a stream event into the current state and returns a new state.
-// Every branch is immutable (the input state is never touched) and idempotent
-// (re-applying the same event produces the same result), so reconnects that replay
-// events cannot corrupt the cache.
+/*
+ * Applies one live update event to the current set of transactions and
+ * returns a new set. It never changes the set passed in. Applying the same
+ * event a second time gives the same result as the first, so if the
+ * connection drops and the backend re-sends an event, nothing is doubled or
+ * lost.
+ */
 export function applyTransactionEvent(
   state: TransactionState,
   event: TransactionEvent,
@@ -22,7 +28,7 @@ export function applyTransactionEvent(
 
 function applyDeleted(state: TransactionState, idToRemove: string | undefined): TransactionState {
   if (idToRemove === undefined || !(idToRemove in state.byId)) {
-    // Returning the same reference lets callers cheaply detect "nothing changed".
+    // Returning the very same object lets callers tell quickly that nothing changed.
     return state;
   }
   const nextById = { ...state.byId };
@@ -37,7 +43,10 @@ function applyUpsert(
   state: TransactionState,
   transaction: Transaction | undefined,
 ): TransactionState {
-  // The schema marks transaction as optional on every event type, so we guard defensively.
+  /*
+   * The transaction can be missing (every event type marks it as optional),
+   * so we check for it before using it.
+   */
   if (transaction === undefined) {
     return state;
   }

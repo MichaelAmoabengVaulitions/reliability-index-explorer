@@ -1,8 +1,8 @@
 /**
- * Factory for React Query cache keys.
+ * Builds the keys React Query uses to label cached data.
  *
- * Centralising keys here keeps every component using the same key shape, so
- * cache reads, invalidations, and prefetches all line up automatically.
+ * Keeping them all here means every component uses the same key for the same
+ * data, so reading the cache, clearing it, and loading ahead all line up.
  */
 export const queryKeys = {
   all: ['reliability'] as const,
