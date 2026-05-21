@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "VITE_API_BASE_URL=http://localhost:3001 vite",
+    "mock": "node scripts/mock-backend.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
