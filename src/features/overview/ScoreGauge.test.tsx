@@ -11,8 +11,9 @@ describe('ScoreGauge', () => {
 
   it('announces the score and band through an accessible label', () => {
     render(<ScoreGauge score={64} band="MEDIUM" />);
-    const gauge = screen.getByRole('img');
-    expect(gauge).toHaveAccessibleName(/reliability score 64 out of 100, medium band/i);
+    expect(screen.getByRole('img')).toHaveAccessibleName(
+      /reliability score 64 out of 100, medium band/i,
+    );
   });
 
   it('clamps a score above 100 to a valid needle position without crashing', () => {
