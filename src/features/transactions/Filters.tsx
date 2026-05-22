@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { config } from '@/config';
 import { categoryLabel } from '@/domain/categories';
@@ -53,15 +53,37 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
   const [searchDraft, setSearchDraft] = useState(storeSearch);
 
   /*
+   * The last search text this component sent to the store. When the store's
+   * search value differs from this, the change came from elsewhere (the Clear
+   * filters button, or a shared link being opened), and the box below should
+   * follow it rather than overwrite it.
+   */
+  const lastSentSearch = useRef(storeSearch);
+
+  /*
    * Send what the visitor has typed into the store only after they pause for
    * a moment, so the list is not re-filtered on every key press.
    */
   useEffect(() => {
     const handle = setTimeout(() => {
-      if (searchDraft !== storeSearch) setSearch(searchDraft);
+      if (searchDraft !== storeSearch) {
+        lastSentSearch.current = searchDraft;
+        setSearch(searchDraft);
+      }
     }, config.ui.searchDebounceMs);
     return () => clearTimeout(handle);
   }, [searchDraft, storeSearch, setSearch]);
+
+  /*
+   * Follow a search value that changed outside this component, so resetting
+   * the filters or opening a shared link updates the search box to match.
+   */
+  useEffect(() => {
+    if (storeSearch !== lastSentSearch.current) {
+      lastSentSearch.current = storeSearch;
+      setSearchDraft(storeSearch);
+    }
+  }, [storeSearch]);
 
   function toggleCategory(code: string) {
     if (categoryCodes.includes(code)) {
