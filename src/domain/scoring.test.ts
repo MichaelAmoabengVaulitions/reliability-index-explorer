@@ -79,7 +79,7 @@ describe('captionForDriver', () => {
   });
 
   it('captions the no-essential-expenses coverage driver', () => {
-    expect(captionForDriver('No essential expenses detected — coverage neutral')).toBe(
+    expect(captionForDriver('No essential expenses detected, coverage neutral')).toBe(
       'Whether income was enough to cover the essential bills.',
     );
   });

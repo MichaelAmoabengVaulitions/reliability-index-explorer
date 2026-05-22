@@ -71,7 +71,7 @@ describe('useTransactions', () => {
 
     /*
      * The refetch reloads the pages; the live event log must survive and be
-     * re-applied. We read the cache directly — it is the source of truth that
+     * re-applied. We read the cache directly. It is the source of truth that
      * every component's useQuery renders from.
      */
     const refetched = queryClient.getQueryData<TransactionsQueryData>(
