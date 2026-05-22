@@ -41,6 +41,11 @@ describe('useUrlSync: reading the URL into the stores on first load', () => {
     expect(useSelectedUser.getState().from).toBe('2026-02-20');
   });
 
+  it('ignores a from value that is not a YYYY-MM-DD date, keeping the store default', () => {
+    renderWithRouter('/?from=not-a-date');
+    expect(useSelectedUser.getState().from).toBe(todayAsIsoDate());
+  });
+
   it('splits the categories param on commas and pushes the array into filters', () => {
     renderWithRouter('/?categories=5411,4900');
     expect(useFilters.getState().categoryCodes).toEqual(['5411', '4900']);

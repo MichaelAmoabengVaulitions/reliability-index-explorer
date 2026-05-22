@@ -33,6 +33,12 @@ const VALID_SIGNS: readonly TransactionSign[] = ['all', 'inflow', 'outflow'];
 const VALID_SORT_FIELDS: readonly SortField[] = ['date', 'amount', 'merchant_name'];
 const VALID_SORT_DIRECTIONS: readonly SortDirection[] = ['asc', 'desc'];
 
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isIsoDate(value: string): boolean {
+  return ISO_DATE_PATTERN.test(value);
+}
+
 function isSign(value: string): value is TransactionSign {
   return (VALID_SIGNS as readonly string[]).includes(value);
 }
@@ -47,7 +53,7 @@ function parseSort(raw: string): TransactionSort | null {
 
 function hydrateStoresFromParams(params: URLSearchParams): void {
   const from = params.get(URL_PARAMS.from);
-  if (from !== null) useSelectedUser.getState().setFrom(from);
+  if (from !== null && isIsoDate(from)) useSelectedUser.getState().setFrom(from);
 
   const categories = params.get(URL_PARAMS.categories);
   if (categories !== null && categories.length > 0) {
