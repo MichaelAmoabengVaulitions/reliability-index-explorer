@@ -296,7 +296,7 @@ request fails, and an empty state if there is genuinely nothing to show.
 
 ## Testing
 
-There are 210 tests. They run with `yarn test`.
+There are 214 tests. They run with `yarn test`.
 
 For the helper functions (the API client, the date and money and scoring
 helpers, the functions that prepare the data, the code that updates the
@@ -323,14 +323,20 @@ depend on the real backend being up.
 
 ## Tradeoffs and limitations
 
-* **The hosted backend does not deliver live updates.** Its live updates
-  address sits behind a gateway that holds the whole response back instead of
-  sending pieces as they happen, so the connection just hangs. The feature is
+* **The hosted backend does not deliver live updates.** The live updates
+  address (`GET /api/users/:userId/transaction-events`) is served through AWS
+  API Gateway, which cannot hold open the long-lived connection a Server-Sent
+  Events stream needs. The request returns nothing for about 30 seconds — API
+  Gateway's request timeout — then fails with `HTTP 503` and the JSON body
+  `{"message":"Service Unavailable"}`, instead of the `text/event-stream`
+  response a real stream would send. (An `apigw-requestid` response header
+  confirms API Gateway is the layer timing the request out.) The feature is
   built and tested, and the project ships a small local backend (see "Seeing
   live updates" above) that sends events in the exact format the API
-  specification documents. The feature was checked end to end against it.
+  specification documents; the feature was checked end to end against it.
   Because that local backend follows the documented format, the same client
-  code will work against the hosted backend once it is fixed.
+  code will work against the hosted backend once its streaming endpoint is
+  fixed.
 * **The transaction list loads every page up front and scrolls as one
   continuous view.** The brief asks for pagination or virtualization; this app
   uses virtualization, so there are no page-by-page controls — the list draws

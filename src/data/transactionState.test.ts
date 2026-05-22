@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 import type { TransactionEvent } from '@/api/schemas';
 import { buildTransaction, buildTransactions } from '@/test-utils/fixtures/transactions';
 
-import { applyTransactionEvent, fromState, toState } from './transactionState';
+import {
+  applyTransactionEvent,
+  applyTransactionEvents,
+  fromState,
+  toState,
+} from './transactionState';
 
 const txOne = buildTransaction({ id: 'tx_1', amount: 100 });
 const txTwo = buildTransaction({ id: 'tx_2', amount: -50 });
@@ -102,6 +107,29 @@ describe('applyTransactionEvent', () => {
     expect(state.allIds.length).toBe(1000 + addedCount - deletedCount);
     expect(state.byId['tx_new_0']).toBeDefined();
     expect(state.byId[initial[0]?.id ?? '']).toBeUndefined();
+  });
+});
+
+describe('applyTransactionEvents', () => {
+  it('returns the same state when there are no events', () => {
+    const state = toState([txOne]);
+    expect(applyTransactionEvents(state, [])).toBe(state);
+  });
+
+  it('applies a sequence of events in order', () => {
+    const next = applyTransactionEvents(toState([txOne]), [
+      { type: 'TRANSACTION_ADDED', transaction: txTwo },
+      { type: 'TRANSACTION_DELETED', transaction_id: 'tx_1' },
+    ]);
+    expect(next.allIds).toEqual(['tx_2']);
+    expect(next.byId.tx_1).toBeUndefined();
+  });
+
+  it('does not change the input state', () => {
+    const state = toState([txOne]);
+    const snapshot = JSON.stringify(state);
+    applyTransactionEvents(state, [{ type: 'TRANSACTION_ADDED', transaction: txTwo }]);
+    expect(JSON.stringify(state)).toBe(snapshot);
   });
 });
 

@@ -26,6 +26,17 @@ export function applyTransactionEvent(
   return applyUpsert(state, event.transaction);
 }
 
+/*
+ * Applies a list of live update events to a starting state, in order, and
+ * returns the result. The starting state is never changed.
+ */
+export function applyTransactionEvents(
+  state: TransactionState,
+  events: readonly TransactionEvent[],
+): TransactionState {
+  return events.reduce(applyTransactionEvent, state);
+}
+
 function applyDeleted(state: TransactionState, idToRemove: string | undefined): TransactionState {
   if (idToRemove === undefined || !(idToRemove in state.byId)) {
     // Returning the very same object lets callers tell quickly that nothing changed.

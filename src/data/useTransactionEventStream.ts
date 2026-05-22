@@ -135,7 +135,11 @@ export function useTransactionEventStream(
       }
       queryClient.setQueryData<TransactionsQueryData>(cacheKey, (previous) => {
         if (previous === undefined) return previous;
-        return { ...previous, state: applyTransactionEvent(previous.state, parsed.data) };
+        return {
+          ...previous,
+          state: applyTransactionEvent(previous.state, parsed.data),
+          liveEvents: [...previous.liveEvents, parsed.data],
+        };
       });
       setApplied((current) => ({ streamKey: current.streamKey, count: current.count + 1 }));
     };
