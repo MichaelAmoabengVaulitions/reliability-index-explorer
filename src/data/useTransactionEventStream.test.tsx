@@ -304,45 +304,4 @@ describe('useTransactionEventStream', () => {
     expect(result.current.eventCount).toBe(0);
   });
 
-  it('exposes the merchant name of the most recently added transaction', async () => {
-    const queryClient = new QueryClient();
-    seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1' })]));
-    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
-      wrapper: buildWrapper(queryClient),
-    });
-    expect(result.current.lastAddedName).toBeUndefined();
-    act(() => {
-      MockEventSource.last?.emit('TRANSACTION_ADDED', {
-        type: 'TRANSACTION_ADDED',
-        transaction: buildTransaction({ id: 'tx_2', merchant_name: 'Side Gig Payout' }),
-      });
-    });
-    await waitFor(() => expect(result.current.lastAddedName).toBe('Side Gig Payout'));
-  });
-
-  it('keeps the last added name when a later event updates or deletes', async () => {
-    const queryClient = new QueryClient();
-    seedTransactionsCache(
-      queryClient,
-      toState([buildTransaction({ id: 'tx_1' }), buildTransaction({ id: 'tx_2' })]),
-    );
-    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
-      wrapper: buildWrapper(queryClient),
-    });
-    act(() => {
-      MockEventSource.last?.emit('TRANSACTION_ADDED', {
-        type: 'TRANSACTION_ADDED',
-        transaction: buildTransaction({ id: 'tx_3', merchant_name: 'Cafe Central' }),
-      });
-    });
-    await waitFor(() => expect(result.current.lastAddedName).toBe('Cafe Central'));
-    act(() => {
-      MockEventSource.last?.emit('TRANSACTION_DELETED', {
-        type: 'TRANSACTION_DELETED',
-        transaction_id: 'tx_1',
-      });
-    });
-    await waitFor(() => expect(result.current.eventCount).toBe(2));
-    expect(result.current.lastAddedName).toBe('Cafe Central');
-  });
 });

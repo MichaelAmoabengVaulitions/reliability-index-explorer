@@ -21,19 +21,15 @@ export type StreamStatus = 'idle' | 'connecting' | 'open' | 'closed';
 /**
  * What the live updates hook reports back to the component using it.
  *
- *  status:        the current connection state (see StreamStatus above).
- *  eventCount:    how many live updates have been applied since the stream for
- *                 this user opened. It counts adds, changes and removals the
- *                 same way, so it only ever goes up while the stream is
- *                 connected, and starts again from zero when the user changes.
- *  lastAddedName: the merchant name of the most recently added transaction, so
- *                 the screen can show what just came in. It stays undefined
- *                 until the first add arrives.
+ *  status:      the current connection state (see StreamStatus above).
+ *  eventCount:  how many live updates have been applied since the stream for
+ *               this user opened. It counts adds, changes and removals the
+ *               same way, so it only ever goes up while the stream is
+ *               connected, and starts again from zero when the user changes.
  */
 export interface StreamState {
   status: StreamStatus;
   eventCount: number;
-  lastAddedName: string | undefined;
 }
 
 /*
@@ -94,13 +90,9 @@ export function useTransactionEventStream(
    * reset state when an input changes.
    */
   const streamKey = `${userId}|${from}|${to}`;
-  const [applied, setApplied] = useState<{
-    streamKey: string;
-    count: number;
-    lastAddedName: string | undefined;
-  }>({ streamKey, count: 0, lastAddedName: undefined });
+  const [applied, setApplied] = useState({ streamKey, count: 0 });
   if (applied.streamKey !== streamKey) {
-    setApplied({ streamKey, count: 0, lastAddedName: undefined });
+    setApplied({ streamKey, count: 0 });
   }
 
   useEffect(() => {
@@ -143,14 +135,7 @@ export function useTransactionEventStream(
         if (previous === undefined) return previous;
         return { ...previous, state: applyTransactionEvent(previous.state, parsed.data) };
       });
-      setApplied((current) => ({
-        streamKey: current.streamKey,
-        count: current.count + 1,
-        lastAddedName:
-          parsed.data.type === 'TRANSACTION_ADDED'
-            ? (parsed.data.transaction?.merchant_name ?? current.lastAddedName)
-            : current.lastAddedName,
-      }));
+      setApplied((current) => ({ streamKey: current.streamKey, count: current.count + 1 }));
     };
 
     for (const eventName of EVENT_TYPE_NAMES) {
@@ -163,10 +148,6 @@ export function useTransactionEventStream(
   }, [shouldSubscribe, userId, from, to, queryClient]);
 
   return shouldSubscribe
-    ? {
-        status: connectionStatus,
-        eventCount: applied.count,
-        lastAddedName: applied.lastAddedName,
-      }
-    : { status: 'idle', eventCount: 0, lastAddedName: undefined };
+    ? { status: connectionStatus, eventCount: applied.count }
+    : { status: 'idle', eventCount: 0 };
 }
