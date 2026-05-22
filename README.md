@@ -456,10 +456,11 @@ analyst knows whether they are looking at fresh data.
 
 ### Caching and performance
 
-React Query caches each backend response, labelled with the user and the date
-range. Returning to a view shows the cached copy at once while a fresh copy
-loads quietly in the background. Cached copies are considered fresh for a set
-time and are dropped after a longer idle time.
+React Query caches the score and transaction responses, each labelled with the
+user and the date window. Returning to a view shows the cached copy at once; if
+that copy has gone stale a fresh one is also loaded quietly in the background,
+and if it is still fresh no request is made. Cached copies are considered fresh
+for a set time and are dropped after a longer idle time.
 
 When a live update arrives, the cached copy is updated directly, so the screen
 updates without a new request to the backend. If a stronger guarantee of
