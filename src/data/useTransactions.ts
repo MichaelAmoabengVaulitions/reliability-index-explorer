@@ -10,8 +10,8 @@ import { applyTransactionEvents, toState, type TransactionState } from './transa
  * What useTransactions keeps in the React Query cache while loading and once
  * done.
  *
- * `state` holds the transactions to show — the fetched pages with every live
- * stream event applied — arranged so one can be found straight away by its id.
+ * `state` holds the transactions to show: the fetched pages with every live
+ * stream event applied, arranged so one can be found straight away by its id.
  * `liveEvents` is the running log of those stream events, kept so a refetch
  * (which reloads the pages) can re-apply them rather than dropping them; the
  * log grows with the length of the session. `loaded` and `total` track how

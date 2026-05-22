@@ -56,120 +56,6 @@ yarn build         # build the app ready to deploy
 A note on `yarn run check`: Yarn version 1 has its own built in `yarn check`
 command, so the project script has to be called with `yarn run check`.
 
-## Seeing live updates
-
-The dashboard shows live transaction updates as they arrive. The hosted
-backend's live updates address does not currently work (see Tradeoffs and
-limitations below), so the project includes a small local backend that does.
-It stands in for the whole backend and sends live events in the exact format
-the API specification documents.
-
-This needs **two terminals**, both running at the same time: one for the
-local backend, one for the app. Open a second terminal tab or window before
-you start.
-
-**Terminal 1: start the local backend.**
-
-```bash
-yarn mock
-```
-
-Wait for it to print `Mock backend running at http://localhost:3001`, then
-leave this terminal running. This is the backend, not a web page, so there is
-nothing to open in a browser from here.
-
-**Terminal 2 (a separate terminal): start the app.**
-
-```bash
-yarn dev:mock
-```
-
-This starts the app and points it at the local backend from Terminal 1. It
-prints an address, usually `http://localhost:5173` (or the next free port,
-such as `5174`, if 5173 is already taken). Open that printed address in a
-browser.
-
-Then pick a user from the sidebar. The dashboard updates on its own as events
-arrive. Here is where to look:
-
-* **The Live badge**, at the top right of the Transactions card. A green dot
-  and the word "Live" mean the stream is connected.
-* **The transaction table**. Every few seconds a row is added, changed or
-  removed. Added transactions are dated across the scoring window, so they
-  slot into the date-sorted list rather than all landing at the top.
-* **The count line below the table**. It reads "Showing X of Y transactions",
-  followed by a "live updates" counter that rises by one for every event,
-  whether it added, changed or removed a row.
-* **The Monthly Cashflow chart**. Live transactions land in different months
-  across the window, so the inflow, outflow and net values of several bars
-  re-sum as events arrive.
-
-By default the local backend streams events continuously, so leave it running
-as long as you want to watch. To stop, press Ctrl+C in each terminal.
-
-### Pushing it harder
-
-`yarn mock` takes three optional settings, useful for seeing how far the app
-holds up with a long transaction list and a fast stream of updates. The
-command below loads a large dataset and streams events fast and continuously:
-
-```bash
-MOCK_TX_COUNT=50000 MOCK_EVENT_INTERVAL_MS=20 yarn mock
-```
-
-* `MOCK_TX_COUNT`: transactions served per user (default 60).
-* `MOCK_EVENT_INTERVAL_MS`: milliseconds between live events (default 3000;
-  set it low for a fast stream).
-* `MOCK_EVENT_TOTAL`: how many live events to send per connection. Leave it
-  unset for a continuous stream (the default); set a number to stop after a
-  fixed count, for example `MOCK_EVENT_TOTAL=500`.
-
-The backend prints the active settings when it starts.
-
-### Verified at scale
-
-The live updates feature has been run against the local backend with **50,000
-transactions** loaded and a live event stream running the whole time. The
-virtualised list, the filters, the cashflow chart and the count line all
-stayed responsive.
-
-To repeat the check:
-
-1. Start the local backend with a large dataset and a steady stream of events:
-
-   ```bash
-   MOCK_TX_COUNT=50000 MOCK_EVENT_INTERVAL_MS=200 yarn mock
-   ```
-
-2. In the second terminal, start the app with `yarn dev:mock`, then open the
-   address it prints.
-3. Pick a user. The 50,000 transactions load one page at a time, and the
-   progress text counts up as they arrive.
-4. While live events keep arriving, confirm that:
-
-   * scrolling the transaction list stays smooth;
-   * changing the sort, typing in the search box and toggling category
-     filters all stay responsive;
-   * the total in the count line keeps moving, and the "live updates" counter
-     beside it keeps rising as events arrive.
-
-### Will it work once the hosted backend is fixed?
-
-Yes. The local backend is not a different design: it sends events in the
-exact format the API specification (`docs/openapi.yaml`) documents, and the
-app's live updates client matches that format point for point.
-
-| The API specification says | The app does |
-| --- | --- |
-| The stream is `GET /api/users/{userId}/transaction-events`, with only a `userId` in the path | Opens the live connection on exactly that address, with no extra parameters |
-| Events are named `TRANSACTION_ADDED`, `TRANSACTION_UPDATED` and `TRANSACTION_DELETED` | Listens for exactly those three event names |
-| Each event's `data` is JSON shaped like `{"type":...,"transaction":{...}}` | Reads `data` as JSON and checks it against the same Zod description the rest of the app uses before applying it |
-| Each event carries an `id`, so a client can resume the stream after a drop | The browser tracks the `id` and reconnects on its own after any drop, showing a "connecting" badge while it retries; re-applying a repeated event changes nothing, so reconnecting is safe |
-
-So when the hosted stream is fixed, the app needs no change: point it back at
-the hosted backend (the default when you run `yarn dev`) and the same client
-handles the real stream.
-
 ## Libraries chosen, and why
 
 The brief asks for the library choices to be documented.
@@ -321,13 +207,129 @@ depend on the real backend being up.
   that case rather than treating it as an error.
 * Each user's transactions are all in one currency.
 
+## Seeing live updates
+
+The dashboard shows live transaction updates as they arrive. The hosted
+backend's streaming service is not available: its live updates endpoint
+returns an `HTTP 503` error after roughly 30 seconds instead of an event
+stream (see "Tradeoffs and limitations" below for the full detail). So the
+project includes a small local backend that streams properly. It stands in
+for the whole backend and sends live events in the exact format the API
+specification documents.
+
+This needs **two terminals**, both running at the same time: one for the
+local backend, one for the app. Open a second terminal tab or window before
+you start.
+
+**Terminal 1: start the local backend.**
+
+```bash
+yarn mock
+```
+
+Wait for it to print `Mock backend running at http://localhost:3001`, then
+leave this terminal running. This is the backend, not a web page, so there is
+nothing to open in a browser from here.
+
+**Terminal 2 (a separate terminal): start the app.**
+
+```bash
+yarn dev:mock
+```
+
+This starts the app and points it at the local backend from Terminal 1. It
+prints an address, usually `http://localhost:5173` (or the next free port,
+such as `5174`, if 5173 is already taken). Open that printed address in a
+browser.
+
+Then pick a user from the sidebar. The dashboard updates on its own as events
+arrive. Here is where to look:
+
+* **The Live badge**, at the top right of the Transactions card. A green dot
+  and the word "Live" mean the stream is connected.
+* **The transaction table**. Every few seconds a row is added, changed or
+  removed. Added transactions are dated across the scoring window, so they
+  slot into the date-sorted list rather than all landing at the top.
+* **The count line below the table**. It reads "Showing X of Y transactions",
+  followed by a "live updates" counter that rises by one for every event,
+  whether it added, changed or removed a row.
+* **The Monthly Cashflow chart**. Live transactions land in different months
+  across the window, so the inflow, outflow and net values of several bars
+  re-sum as events arrive.
+
+By default the local backend streams events continuously, so leave it running
+as long as you want to watch. To stop, press Ctrl+C in each terminal.
+
+### Pushing it harder
+
+`yarn mock` takes three optional settings, useful for seeing how far the app
+holds up with a long transaction list and a fast stream of updates. The
+command below loads a large dataset and streams events fast and continuously:
+
+```bash
+MOCK_TX_COUNT=50000 MOCK_EVENT_INTERVAL_MS=20 yarn mock
+```
+
+* `MOCK_TX_COUNT`: transactions served per user (default 60).
+* `MOCK_EVENT_INTERVAL_MS`: milliseconds between live events (default 3000;
+  set it low for a fast stream).
+* `MOCK_EVENT_TOTAL`: how many live events to send per connection. Leave it
+  unset for a continuous stream (the default); set a number to stop after a
+  fixed count, for example `MOCK_EVENT_TOTAL=500`.
+
+The backend prints the active settings when it starts.
+
+### Verified at scale
+
+The live updates feature has been run against the local backend with **50,000
+transactions** loaded and a live event stream running the whole time. The
+virtualised list, the filters, the cashflow chart and the count line all
+stayed responsive.
+
+To repeat the check:
+
+1. Start the local backend with a large dataset and a steady stream of events:
+
+   ```bash
+   MOCK_TX_COUNT=50000 MOCK_EVENT_INTERVAL_MS=200 yarn mock
+   ```
+
+2. In the second terminal, start the app with `yarn dev:mock`, then open the
+   address it prints.
+3. Pick a user. The 50,000 transactions load one page at a time, and the
+   progress text counts up as they arrive.
+4. While live events keep arriving, confirm that:
+
+   * scrolling the transaction list stays smooth;
+   * changing the sort, typing in the search box and toggling category
+     filters all stay responsive;
+   * the total in the count line keeps moving, and the "live updates" counter
+     beside it keeps rising as events arrive.
+
+### Will it work once the hosted backend is fixed?
+
+Yes. The local backend is not a different design: it sends events in the
+exact format the API specification (`docs/openapi.yaml`) documents, and the
+app's live updates client matches that format point for point.
+
+| The API specification says | The app does |
+| --- | --- |
+| The stream is `GET /api/users/{userId}/transaction-events`, with only a `userId` in the path | Opens the live connection on exactly that address, with no extra parameters |
+| Events are named `TRANSACTION_ADDED`, `TRANSACTION_UPDATED` and `TRANSACTION_DELETED` | Listens for exactly those three event names |
+| Each event's `data` is JSON shaped like `{"type":...,"transaction":{...}}` | Reads `data` as JSON and checks it against the same Zod description the rest of the app uses before applying it |
+| Each event carries an `id`, so a client can resume the stream after a drop | The browser tracks the `id` and reconnects on its own after any drop, showing a "connecting" badge while it retries; re-applying a repeated event changes nothing, so reconnecting is safe |
+
+So when the hosted stream is fixed, the app needs no change: point it back at
+the hosted backend (the default when you run `yarn dev`) and the same client
+handles the real stream.
+
 ## Tradeoffs and limitations
 
 * **The hosted backend does not deliver live updates.** The live updates
   address (`GET /api/users/:userId/transaction-events`) is served through AWS
   API Gateway, which cannot hold open the long-lived connection a Server-Sent
-  Events stream needs. The request returns nothing for about 30 seconds — API
-  Gateway's request timeout — then fails with `HTTP 503` and the JSON body
+  Events stream needs. The request returns nothing for about 30 seconds (API
+  Gateway's request timeout), then fails with `HTTP 503` and the JSON body
   `{"message":"Service Unavailable"}`, instead of the `text/event-stream`
   response a real stream would send. (An `apigw-requestid` response header
   confirms API Gateway is the layer timing the request out.) The feature is
@@ -339,7 +341,7 @@ depend on the real backend being up.
   fixed.
 * **The transaction list loads every page up front and scrolls as one
   continuous view.** The brief asks for pagination or virtualization; this app
-  uses virtualization, so there are no page-by-page controls — the list draws
+  uses virtualization, so there are no page-by-page controls. The list draws
   only the rows on screen and you scroll the whole set. Loading all pages up
   front keeps filtering, sorting and the chart simple, since every calculation
   runs over the full set the app already holds. For very large histories this
