@@ -73,6 +73,7 @@ function seedTransactionsCache(
 ): void {
   queryClient.setQueryData<TransactionsQueryData>(queryKeys.transactions(USER_ID, FROM, TO), {
     state,
+    liveEvents: [],
     loaded: state.allIds.length,
     total: state.allIds.length,
   });
