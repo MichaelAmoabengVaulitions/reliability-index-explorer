@@ -159,12 +159,6 @@ export function Explorer() {
                 · {stream.eventCount} live {stream.eventCount === 1 ? 'update' : 'updates'}
               </span>
             )}
-            {stream.lastAddedName !== undefined && (
-              <span className="ml-2">
-                · last added:{' '}
-                <span className="font-medium text-slate-700">{stream.lastAddedName}</span>
-              </span>
-            )}
           </p>
         </>
       )}

@@ -98,9 +98,8 @@ arrive. Here is where to look:
   removed. Added transactions are dated across the scoring window, so they
   slot into the date-sorted list rather than all landing at the top.
 * **The count line below the table**. It reads "Showing X of Y transactions",
-  followed by a "live updates" counter. That counter rises by one for every
-  event, whether it added, changed or removed a row, and the name of the most
-  recently added transaction is shown next to it.
+  followed by a "live updates" counter that rises by one for every event,
+  whether it added, changed or removed a row.
 * **The Monthly Cashflow chart**. Live transactions land in different months
   across the window, so the inflow, outflow and net values of several bars
   re-sum as events arrive.
@@ -111,17 +110,19 @@ as long as you want to watch. To stop, press Ctrl+C in each terminal.
 ### Pushing it harder
 
 `yarn mock` takes three optional settings, useful for seeing how far the app
-holds up with a long transaction list and a fast stream of updates:
+holds up with a long transaction list and a fast stream of updates. The
+command below loads a large dataset and streams events fast and continuously:
 
 ```bash
-MOCK_TX_COUNT=50000 MOCK_EVENT_TOTAL=100000 MOCK_EVENT_INTERVAL_MS=20 yarn mock
+MOCK_TX_COUNT=50000 MOCK_EVENT_INTERVAL_MS=20 yarn mock
 ```
 
 * `MOCK_TX_COUNT`: transactions served per user (default 60).
-* `MOCK_EVENT_TOTAL`: live events sent on each connection. With nothing set the
-  stream runs continuously; set a number for a fixed count.
 * `MOCK_EVENT_INTERVAL_MS`: milliseconds between live events (default 3000;
   set it low for a fast stream).
+* `MOCK_EVENT_TOTAL`: how many live events to send per connection. Leave it
+  unset for a continuous stream (the default); set a number to stop after a
+  fixed count, for example `MOCK_EVENT_TOTAL=500`.
 
 The backend prints the active settings when it starts.
 
@@ -137,7 +138,7 @@ To repeat the check:
 1. Start the local backend with a large dataset and a steady stream of events:
 
    ```bash
-   MOCK_TX_COUNT=50000 MOCK_EVENT_TOTAL=100000 MOCK_EVENT_INTERVAL_MS=200 yarn mock
+   MOCK_TX_COUNT=50000 MOCK_EVENT_INTERVAL_MS=200 yarn mock
    ```
 
 2. In the second terminal, start the app with `yarn dev:mock`, then open the
