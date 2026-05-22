@@ -140,7 +140,12 @@ export async function fetchAllTransactions({
     const result = await fetchTransactionPage({ userId, from, to, page });
     all.push(...result.transactions);
     onProgress?.(all.length, result.total);
-    if (!result.has_more) return all;
+    /*
+     * Stop when there are no more pages, or when the backend reports more but
+     * sends an empty one — without the empty-page check a wrong has_more flag
+     * would loop forever.
+     */
+    if (!result.has_more || result.transactions.length === 0) return all;
     page += 1;
   }
 }

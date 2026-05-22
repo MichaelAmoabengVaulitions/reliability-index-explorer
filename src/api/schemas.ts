@@ -44,12 +44,6 @@ export const reliabilityResponseSchema = z.strictObject({
   drivers: z.array(z.string()),
 });
 
-export const cursorPaginatedSchema = z.strictObject({
-  transactions: z.array(transactionSchema),
-  next_cursor: z.string().nullable(),
-  total: z.number().int(),
-});
-
 /*
  * The form the live backend returns transactions in today. total_pages is
  * optional because the real server does not always include it; we go by
@@ -61,12 +55,6 @@ export const offsetPaginatedSchema = z.strictObject({
   page: z.number().int(),
   limit: z.number().int(),
   total_pages: z.number().int().optional(),
-  has_more: z.boolean(),
-});
-
-export const unpaginatedSchema = z.strictObject({
-  transactions: z.array(transactionSchema),
-  total: z.number().int(),
   has_more: z.boolean(),
 });
 
@@ -98,8 +86,6 @@ export const transactionEventSchema = z.strictObject({
 export type Transaction = z.infer<typeof transactionSchema>;
 export type ScoringMetrics = z.infer<typeof scoringMetricsSchema>;
 export type ReliabilityResponse = z.infer<typeof reliabilityResponseSchema>;
-export type CursorPaginatedResponse = z.infer<typeof cursorPaginatedSchema>;
 export type OffsetPaginatedResponse = z.infer<typeof offsetPaginatedSchema>;
-export type UnpaginatedResponse = z.infer<typeof unpaginatedSchema>;
 export type TransactionEvent = z.infer<typeof transactionEventSchema>;
 export type DiscoveryResponse = z.infer<typeof discoveryResponseSchema>;

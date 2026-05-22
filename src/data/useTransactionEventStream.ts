@@ -93,6 +93,8 @@ export function useTransactionEventStream(
   const [applied, setApplied] = useState({ streamKey, count: 0 });
   if (applied.streamKey !== streamKey) {
     setApplied({ streamKey, count: 0 });
+    // A new stream starts fresh: show "connecting" until the new one opens.
+    setConnectionStatus('connecting');
   }
 
   useEffect(() => {

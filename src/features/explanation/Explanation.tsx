@@ -66,8 +66,8 @@ function Column({ title, drivers, emptyHint }: ColumnProps) {
         <p className="m-0 text-sm text-slate-500">{emptyHint}</p>
       ) : (
         <ul className="m-0 divide-y divide-slate-100 p-0">
-          {drivers.map((driver) => (
-            <DriverRow key={driver.raw} driver={driver} />
+          {drivers.map((driver, index) => (
+            <DriverRow key={`${index}-${driver.raw}`} driver={driver} />
           ))}
         </ul>
       )}

@@ -114,6 +114,15 @@ describe('fetchAllTransactions', () => {
     );
     await expect(fetchAllTransactions(window)).rejects.toBeInstanceOf(ApiError);
   });
+
+  it('stops instead of looping forever when the backend reports more pages but sends an empty one', async () => {
+    server.use(
+      http.get('*/api/users/:userId/transactions', () =>
+        HttpResponse.json({ transactions: [], total: 10, page: 1, limit: 500, has_more: true }),
+      ),
+    );
+    await expect(fetchAllTransactions(window)).resolves.toEqual([]);
+  }, 2000);
 });
 
 describe('fetchAvailableUserIds', () => {

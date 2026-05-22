@@ -172,10 +172,10 @@ export function Overview() {
               </a>
             </div>
             <ul className="m-0 flex flex-col gap-3 p-0">
-              {drivers.slice(0, DRIVERS_PREVIEW_COUNT).map((driver) => {
+              {drivers.slice(0, DRIVERS_PREVIEW_COUNT).map((driver, index) => {
                 const caption = captionForDriver(driver);
                 return (
-                  <li key={driver} className="border-l-2 border-slate-200 pl-3">
+                  <li key={`${index}-${driver}`} className="border-l-2 border-slate-200 pl-3">
                     <p className="m-0 text-sm font-medium text-slate-800">{driver}</p>
                     {caption !== undefined && (
                       <p className="m-0 mt-0.5 text-xs leading-snug text-slate-500">{caption}</p>
