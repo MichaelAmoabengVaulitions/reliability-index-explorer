@@ -164,7 +164,11 @@ to the next.
 filter changes, the address bar is updated a short moment later, so a burst of
 typing in the search box counts as one change rather than one per keystroke.
 Opening a saved link restores the same filtered view.
+
+
 NOTE: THERE ARE CUSTOM HOOKS WHICH SHOULD BE RATHER UTILITY FUNCTIONS. IT DOES NOT HURT THE PROJECT BUT THEY FOLLOW THE RULES OF CUSTOM HOOK WHICH IN PRACTICE TJEY SHOULD NOT
+
+
 ## Component design
 
 The five features are each a self contained folder. Each one is wrapped in an
