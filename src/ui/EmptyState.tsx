@@ -24,9 +24,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
         </span>
       )}
       <p className="m-0 mb-1 text-base font-semibold text-slate-900">{title}</p>
-      {description !== undefined && (
-        <p className="m-0 mb-4 max-w-[36ch] text-sm">{description}</p>
-      )}
+      {description !== undefined && <p className="m-0 mb-4 max-w-[36ch] text-sm">{description}</p>}
       {action !== undefined && <div className="mt-1">{action}</div>}
     </div>
   );

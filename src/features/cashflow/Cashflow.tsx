@@ -63,9 +63,7 @@ function CashflowTooltip({
             <span className="text-slate-600" style={{ color: entry.color }}>
               {entry.name}
             </span>
-            <span className="font-medium text-slate-900">
-              {formatMoney(entry.value, currency)}
-            </span>
+            <span className="font-medium text-slate-900">{formatMoney(entry.value, currency)}</span>
           </p>
         ))}
       </div>
@@ -152,8 +150,20 @@ export function Cashflow() {
             />
             <Tooltip content={<CashflowTooltip currency={currency} />} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar dataKey="inflow" name="Inflow" stackId="a" fill={CHART_COLORS.inflow} radius={[BAR_TOP_RADIUS, BAR_TOP_RADIUS, 0, 0]} />
-            <Bar dataKey="outflow" name="Outflow" stackId="a" fill={CHART_COLORS.outflow} radius={[BAR_TOP_RADIUS, BAR_TOP_RADIUS, 0, 0]} />
+            <Bar
+              dataKey="inflow"
+              name="Inflow"
+              stackId="a"
+              fill={CHART_COLORS.inflow}
+              radius={[BAR_TOP_RADIUS, BAR_TOP_RADIUS, 0, 0]}
+            />
+            <Bar
+              dataKey="outflow"
+              name="Outflow"
+              stackId="a"
+              fill={CHART_COLORS.outflow}
+              radius={[BAR_TOP_RADIUS, BAR_TOP_RADIUS, 0, 0]}
+            />
             <Line
               type="monotone"
               dataKey="net"

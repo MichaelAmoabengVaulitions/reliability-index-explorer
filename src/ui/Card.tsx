@@ -31,9 +31,7 @@ export function Card({ title, actions, children, ariaLabel, className }: CardPro
           {title !== undefined && (
             <h2 className="m-0 text-base font-semibold text-slate-900">{title}</h2>
           )}
-          {actions !== undefined && (
-            <div className="flex items-center gap-2">{actions}</div>
-          )}
+          {actions !== undefined && <div className="flex items-center gap-2">{actions}</div>}
         </header>
       )}
       <div className="min-w-0 flex-1">{children}</div>

@@ -24,9 +24,7 @@ export function ErrorState({
       className="flex flex-col items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-900"
     >
       <p className="m-0 text-base font-semibold">{title}</p>
-      {description !== undefined && (
-        <p className="m-0 text-sm text-red-800">{description}</p>
-      )}
+      {description !== undefined && <p className="m-0 text-sm text-red-800">{description}</p>}
       {onRetry !== undefined && (
         <button
           type="button"

@@ -23,9 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
-# Local-only docs (Claude rules + runbook for this assignment)
+# Local-only docs
 CLAUDE.md
 PLAN.md
+docs/ISSUES.md
+docs/PROJECT_OVERVIEW.md
 
 # Env
 .env

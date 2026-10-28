@@ -54,11 +54,7 @@ const EVENT_TYPE_NAMES: readonly TransactionEvent['type'][] = [
  * have been applied, so the component can show a "Live" badge and how much
  * has come through.
  */
-export function useTransactionEventStream(
-  userId: string,
-  from: string,
-  to: string,
-): StreamState {
+export function useTransactionEventStream(userId: string, from: string, to: string): StreamState {
   const queryClient = useQueryClient();
   /*
    * EventSource is a browser feature, and is missing in the test environment.
@@ -74,9 +70,8 @@ export function useTransactionEventStream(
    * "idle" value is worked out from shouldSubscribe as the component draws,
    * so we never have to set state from inside the effect to go back to idle.
    */
-  const [connectionStatus, setConnectionStatus] = useState<
-    Exclude<StreamStatus, 'idle'>
-  >('connecting');
+  const [connectionStatus, setConnectionStatus] =
+    useState<Exclude<StreamStatus, 'idle'>>('connecting');
 
   /*
    * A running count of the live updates applied since this stream opened. It

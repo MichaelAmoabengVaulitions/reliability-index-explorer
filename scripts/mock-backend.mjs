@@ -442,6 +442,8 @@ server.listen(PORT, () => {
   console.log(`Mock backend running at http://localhost:${PORT}`);
   console.log(`  transactions per user:       ${TX_COUNT}`);
   const eventTotalLabel = Number.isFinite(EVENT_TOTAL) ? `${EVENT_TOTAL}` : 'continuous';
-  console.log(`  live events per connection:  ${eventTotalLabel}, one every ${EVENT_INTERVAL_MS}ms`);
+  console.log(
+    `  live events per connection:  ${eventTotalLabel}, one every ${EVENT_INTERVAL_MS}ms`,
+  );
   console.log('Start the app against it with:  yarn dev:mock');
 });

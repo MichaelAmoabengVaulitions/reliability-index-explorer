@@ -29,9 +29,7 @@ export function Root() {
             <h1 className="m-0 text-lg font-semibold text-slate-900">
               {userId !== undefined ? userId : 'Pick a user to begin'}
             </h1>
-            <p className="m-0 text-xs text-slate-500">
-              Scoring window ends {fromDate}
-            </p>
+            <p className="m-0 text-xs text-slate-500">Scoring window ends {fromDate}</p>
           </div>
           {/* Mobile fallback so the picker is reachable on narrow screens where the sidebar is hidden. */}
           <div className="md:hidden">
