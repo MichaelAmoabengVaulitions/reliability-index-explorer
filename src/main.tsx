@@ -2,10 +2,9 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router';
 
 import { createQueryClient } from './data/queryClient.ts';
-import { ROUTER_FUTURE_FLAGS } from './routerFutureFlags.ts';
 import { Dashboard } from './routes/Dashboard.tsx';
 import { Root } from './routes/Root.tsx';
 
@@ -21,7 +20,7 @@ const queryClient = createQueryClient();
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter future={ROUTER_FUTURE_FLAGS}>
+      <BrowserRouter>
         <Routes>
           <Route path="/" element={<Root />}>
             <Route path="users/:userId" element={<Dashboard />} />

@@ -1,10 +1,9 @@
 import { act, render, screen } from '@testing-library/react';
-import { MemoryRouter, useSearchParams } from 'react-router-dom';
+import { MemoryRouter, useSearchParams } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { config } from '@/config';
 import { todayAsIsoDate } from '@/domain/dates';
-import { ROUTER_FUTURE_FLAGS } from '@/routerFutureFlags';
 
 import { useFilters } from './filters';
 import { useSelectedUser } from './selectedUser';
@@ -18,7 +17,7 @@ function TestHarness() {
 
 function renderWithRouter(initialUrl: string) {
   return render(
-    <MemoryRouter initialEntries={[initialUrl]} future={ROUTER_FUTURE_FLAGS}>
+    <MemoryRouter initialEntries={[initialUrl]}>
       <TestHarness />
     </MemoryRouter>,
   );
