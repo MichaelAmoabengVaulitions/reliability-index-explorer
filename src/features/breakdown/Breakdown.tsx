@@ -1,8 +1,7 @@
-import type { ReliabilityResponse } from '@/api/schemas';
 import { config } from '@/config';
 import { useDashboardParams } from '@/data/useDashboardParams';
 import { useReliability } from '@/data/useReliability';
-import { formatCoverageRatio, parseDriver } from '@/domain/scoring';
+import { formatCoverageRatio, formatPoints, sumDriverPoints } from '@/domain/scoring';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
@@ -25,7 +24,8 @@ const SIGNAL_CAP_LABELS = {
  */
 const COVERAGE_BAR_FULL_AT = 2;
 
-const SAVINGS_DRIVER_PATTERN = /savings|saving|surplus/i;
+const RESILIENCE_MIN_POINTS = -20;
+const RESILIENCE_MAX_POINTS = 25;
 
 interface SignalCardProps {
   title: string;
@@ -61,24 +61,14 @@ function SignalCard({ title, value, position, capLabel, extraRow }: SignalCardPr
   );
 }
 
-function findSavingsDriver(response: ReliabilityResponse) {
-  for (const raw of response.drivers) {
-    const driver = parseDriver(raw);
-    if (driver.points !== undefined && SAVINGS_DRIVER_PATTERN.test(driver.label)) {
-      return driver;
-    }
-  }
-  return undefined;
-}
-
 /**
  * A four-card breakdown of the signals that make up the score.
  *
- * The first three signals come straight from the metrics. The fourth
- * (Resilience) is built from three of the metric numbers, plus an optional
- * savings line read from the driver strings, because the API has no separate
- * savings field. When there is no savings driver, that line is simply left
- * out rather than guessed.
+ * The first three signals come straight from the metrics. The API doesn't say
+ * how many points each of those earned, and the score belongs to the backend,
+ * so we show the value and the range rather than work the points out. The
+ * fourth (Resilience) is the only signal with points in the API: they are the
+ * ones on the driver lines, so we add those up.
  */
 export function Breakdown() {
   const { userId, from } = useDashboardParams();
@@ -110,7 +100,8 @@ export function Breakdown() {
   }
 
   const { metrics } = response;
-  const savingsDriver = findSavingsDriver(response);
+  const resiliencePoints = sumDriverPoints(response.drivers);
+  const resilienceRange = RESILIENCE_MAX_POINTS - RESILIENCE_MIN_POINTS;
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -143,17 +134,13 @@ export function Breakdown() {
       />
       <SignalCard
         title="Resilience Adjustments"
-        value={`${metrics.good_months} / ${config.api.scoringWindowMonths} good months`}
-        position={metrics.good_months / config.api.scoringWindowMonths}
+        value={formatPoints(resiliencePoints)}
+        position={(resiliencePoints - RESILIENCE_MIN_POINTS) / resilienceRange}
         capLabel={SIGNAL_CAP_LABELS.resilience}
-        extraRow={
-          savingsDriver !== undefined
-            ? {
-                label: savingsDriver.label,
-                value: `${savingsDriver.points && savingsDriver.points >= 0 ? '+' : ''}${savingsDriver.points} pts`,
-              }
-            : { label: 'Late fee events', value: `${metrics.late_fee_events}` }
-        }
+        extraRow={{
+          label: 'Good months',
+          value: `${metrics.good_months} / ${config.api.scoringWindowMonths}`,
+        }}
       />
     </div>
   );

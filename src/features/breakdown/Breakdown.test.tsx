@@ -33,12 +33,21 @@ describe('Breakdown', () => {
     });
   });
 
-  it('surfaces the savings driver inside the resilience card when present', async () => {
+  it('shows the resilience total added up from the driver points', async () => {
     renderWithProviders(<Breakdown />, SAMPLE_DASHBOARD_ROUTE);
-    await waitFor(() => {
-      expect(screen.getByText(/Savings behavior detected/i)).toBeInTheDocument();
-    });
-    expect(screen.getByText('+13 pts')).toBeInTheDocument();
+    // The fixture has +13, -10 and -1.
+    expect(await screen.findByText('+2 pts')).toBeInTheDocument();
+    expect(screen.getByText(/-20 to \+25 pts/)).toBeInTheDocument();
+  });
+
+  it('shows zero points when no driver has any', async () => {
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json(
+        buildReliabilityResponse({ response: { drivers: ['Income present in 0/6 months'] } }),
+      ),
+    );
+    renderWithProviders(<Breakdown />, SAMPLE_DASHBOARD_ROUTE);
+    expect(await screen.findByText('0 pts')).toBeInTheDocument();
   });
 
   it('shows a dash on the coverage card when the ratio is null', async () => {

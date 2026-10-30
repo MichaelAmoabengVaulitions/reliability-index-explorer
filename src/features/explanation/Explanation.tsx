@@ -1,7 +1,7 @@
 import type { ReliabilityResponse } from '@/api/schemas';
 import { useDashboardParams } from '@/data/useDashboardParams';
 import { useReliability } from '@/data/useReliability';
-import { type ParsedDriver, captionForDriver, parseDriver } from '@/domain/scoring';
+import { type ParsedDriver, captionForDriver, formatPoints, parseDriver } from '@/domain/scoring';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
@@ -27,8 +27,6 @@ function pointsChipClasses(driver: ParsedDriver): string {
 }
 
 function DriverRow({ driver }: DriverRowProps) {
-  const showsPoints = driver.points !== undefined;
-  const sign = driver.points !== undefined && driver.points > 0 ? '+' : '';
   const caption = captionForDriver(driver.raw);
   return (
     <li className="flex items-start justify-between gap-3 py-2">
@@ -36,12 +34,11 @@ function DriverRow({ driver }: DriverRowProps) {
         <p className="m-0 text-sm text-slate-700">{driver.label}</p>
         {caption !== undefined && <p className="m-0 mt-0.5 text-xs text-slate-500">{caption}</p>}
       </div>
-      {showsPoints && (
+      {driver.points !== undefined && (
         <span
           className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pointsChipClasses(driver)}`}
         >
-          {sign}
-          {driver.points} pts
+          {formatPoints(driver.points)}
         </span>
       )}
     </li>
@@ -75,7 +72,7 @@ function Column({ title, drivers, emptyHint }: ColumnProps) {
 
 /**
  * Splits the API's driver strings into "what's helping", "what's hurting",
- * and a Notes column for the ones with no points value.
+ * and a Notes column for the ones we can't place.
  *
  * The short line above the columns changes with the band, so the page always
  * opens with a sentence the analyst can read out loud.

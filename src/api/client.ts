@@ -4,10 +4,12 @@ import { config } from '@/config';
 
 import {
   type DiscoveryResponse,
+  type MerchantCategory,
   type OffsetPaginatedResponse,
   type ReliabilityResponse,
   type Transaction,
   discoveryResponseSchema,
+  merchantCategoriesResponseSchema,
   offsetPaginatedSchema,
   reliabilityResponseSchema,
 } from './schemas';
@@ -144,6 +146,14 @@ export async function fetchAllTransactions({
     if (!result.has_more || result.transactions.length === 0) return all;
     page += 1;
   }
+}
+
+export async function fetchMerchantCategories(): Promise<MerchantCategory[]> {
+  const response = await request(
+    '/api/dictionaries/merchant-categories',
+    merchantCategoriesResponseSchema,
+  );
+  return response.categories;
 }
 
 export interface Discovery {

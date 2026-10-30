@@ -65,15 +65,36 @@ export interface ParsedDriver {
  */
 const POINTS_SUFFIX = /\s*\(([+-]?\d+)\s*pts\)\s*$/;
 
+const HELPING_WORDING = /strong income coverage|income covers essential|detected consistently/i;
+const HURTING_WORDING = /inconsistent|some gaps|no income/i;
+// A count like the "5/6" in "Income present in 5/6 months".
+const COUNT_IN_WORDING = /(\d+)\/(\d+)/;
+const HELPING_SHARE_OF_COUNT = 0.5;
+
+/*
+ * Most drivers come with no points, so their wording says which way they
+ * point. Wording we don't recognise stays neutral rather than being guessed.
+ */
+function kindFromWording(driver: string): DriverKind {
+  if (HURTING_WORDING.test(driver)) return 'risk';
+  if (HELPING_WORDING.test(driver)) return 'positive';
+
+  const count = driver.match(COUNT_IN_WORDING);
+  const total = Number(count?.[2]);
+  if (count === null || total === 0) return 'neutral';
+  return Number(count[1]) / total >= HELPING_SHARE_OF_COUNT ? 'positive' : 'risk';
+}
+
 /*
  * Splits a driver string from the API into its wording and an optional points
  * value. The points decide whether the driver counts as positive, a risk, or
- * neutral, so the UI can show it under the right column.
+ * neutral, and the wording decides when there are no points, so the UI can
+ * show it under the right column.
  */
 export function parseDriver(raw: string): ParsedDriver {
   const match = raw.match(POINTS_SUFFIX);
   if (match === null) {
-    return { raw, label: raw.trim(), kind: 'neutral' };
+    return { raw, label: raw.trim(), kind: kindFromWording(raw) };
   }
   const points = Number(match[1]);
   const label = raw.replace(POINTS_SUFFIX, '').trim();
@@ -86,4 +107,12 @@ export function parseDriver(raw: string): ParsedDriver {
     points,
     kind: points > 0 ? 'positive' : 'risk',
   };
+}
+
+export function sumDriverPoints(drivers: readonly string[]): number {
+  return drivers.reduce((total, driver) => total + (parseDriver(driver).points ?? 0), 0);
+}
+
+export function formatPoints(points: number): string {
+  return `${points > 0 ? '+' : ''}${points} pts`;
 }

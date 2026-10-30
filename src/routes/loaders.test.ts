@@ -26,6 +26,14 @@ describe('rootLoader', () => {
     });
   });
 
+  it('starts loading the category names', async () => {
+    await rootLoader(queryClient)();
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(queryKeys.merchantCategories)).toBeDefined();
+    });
+  });
+
   it('does not fail when the backend is down', async () => {
     vi.mocked(fetch).mockImplementation(async () =>
       Response.json({ error: 'boom' }, { status: 500 }),

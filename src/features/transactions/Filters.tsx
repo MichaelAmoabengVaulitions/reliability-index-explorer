@@ -1,7 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { config } from '@/config';
+import { merchantCategoriesQuery } from '@/data/queries';
 import { useDashboardParams } from '@/data/useDashboardParams';
 import { categoryLabel } from '@/domain/categories';
 import type { SortDirection, SortField, TransactionSign } from '@/domain/dashboardParams';
@@ -45,6 +47,7 @@ const SORT_OPTIONS: ReadonlyArray<{
 export function Filters({ availableCategoryCodes }: FiltersProps) {
   const { filters, updateFilters } = useDashboardParams();
   const { categoryCodes, sign, search, sort } = filters;
+  const { data: merchantCategories } = useQuery(merchantCategoriesQuery);
 
   const [searchDraft, setSearchDraft] = useState(search);
 
@@ -140,7 +143,7 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
                   onChange={() => toggleCategory(code)}
                   className="rounded border-slate-300 text-brand-500 focus:ring-brand-500"
                 />
-                <span className="flex-1">{categoryLabel(code)}</span>
+                <span className="flex-1">{categoryLabel(code, merchantCategories)}</span>
                 <span className="text-xs text-slate-400">{code}</span>
               </label>
             ))

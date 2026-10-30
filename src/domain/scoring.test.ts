@@ -1,20 +1,54 @@
 import { describe, expect, it } from 'vitest';
 
-import { captionForDriver, formatCoverageRatio, parseDriver } from './scoring';
+import {
+  captionForDriver,
+  formatCoverageRatio,
+  formatPoints,
+  parseDriver,
+  sumDriverPoints,
+} from './scoring';
 
 describe('parseDriver', () => {
-  it('treats a string with no parentheses suffix as neutral', () => {
+  it('keeps the wording as it is when there are no points', () => {
     const result = parseDriver('Income present in 5/6 months');
-    expect(result.kind).toBe('neutral');
     expect(result.points).toBeUndefined();
     expect(result.label).toBe('Income present in 5/6 months');
     expect(result.raw).toBe('Income present in 5/6 months');
   });
 
-  it('treats parentheses without a pts suffix as neutral', () => {
-    const result = parseDriver('Income covers essential expenses (1.41x)');
-    expect(result.kind).toBe('neutral');
-    expect(result.points).toBeUndefined();
+  it.each([
+    'Income present in 6/6 months',
+    'Income present in 5/6 months',
+    'Income present in 3/6 months',
+    'Good cashflow months: 3/6',
+    'Income covers essential expenses (1.8x)',
+    'Strong income coverage: 2.42x essential expenses',
+    'Essential payments detected consistently',
+  ])('counts "%s" as helping', (driver) => {
+    expect(parseDriver(driver).kind).toBe('positive');
+  });
+
+  it.each([
+    'Income present in 2/6 months',
+    'Income present in 0/6 months',
+    'Good cashflow months: 2/6',
+    'No income or essential expenses detected',
+    'Essential payments present but with some gaps',
+    'Essential payments inconsistent or sparse',
+  ])('counts "%s" as hurting', (driver) => {
+    expect(parseDriver(driver).kind).toBe('risk');
+  });
+
+  it.each([
+    'Some new driver the backend invented',
+    'No essential expenses detected, coverage neutral',
+    'Nothing to measure yet: 0/0',
+  ])('leaves "%s" in the notes rather than guessing', (driver) => {
+    expect(parseDriver(driver).kind).toBe('neutral');
+  });
+
+  it('lets points decide over the wording', () => {
+    expect(parseDriver('Payments inconsistent (+5 pts)').kind).toBe('positive');
   });
 
   it('parses a positive pts suffix and strips it from the label', () => {
@@ -48,6 +82,37 @@ describe('parseDriver', () => {
     expect(result.kind).toBe('positive');
     expect(result.points).toBe(7);
     expect(result.label).toBe('Spaced suffix');
+  });
+});
+
+describe('sumDriverPoints', () => {
+  it('adds up the points across the drivers that have them', () => {
+    const drivers = [
+      'Income present in 6/6 months',
+      'Savings behavior detected (+21 pts)',
+      'Estimated 40 negative balance day(s) (-10 pts)',
+      '1 late fee event(s) detected (-1 pts)',
+    ];
+    expect(sumDriverPoints(drivers)).toBe(10);
+  });
+
+  it('is zero when no driver has points', () => {
+    expect(sumDriverPoints(['Income present in 0/6 months'])).toBe(0);
+    expect(sumDriverPoints([])).toBe(0);
+  });
+});
+
+describe('formatPoints', () => {
+  it('puts a plus on positive points', () => {
+    expect(formatPoints(13)).toBe('+13 pts');
+  });
+
+  it('keeps the minus on negative points', () => {
+    expect(formatPoints(-10)).toBe('-10 pts');
+  });
+
+  it('shows zero with no sign', () => {
+    expect(formatPoints(0)).toBe('0 pts');
   });
 });
 

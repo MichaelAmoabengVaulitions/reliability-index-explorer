@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { buildReliabilityResponse } from '@/test-utils/fixtures/reliability';
 import { SAMPLE_DASHBOARD_ROUTE, renderWithProviders } from '@/test-utils/renderWithProviders';
 
 import { Explanation } from './Explanation';
@@ -26,13 +27,36 @@ describe('Explanation', () => {
     expect(screen.getByText('-1 pts')).toBeInTheDocument();
   });
 
-  it('puts drivers without a points value in the Notes section', async () => {
+  it('sorts drivers with no points by their wording', async () => {
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json(
+        buildReliabilityResponse({
+          response: {
+            drivers: ['Income present in 0/6 months', 'Strong income coverage: 2.42x'],
+          },
+        }),
+      ),
+    );
     renderWithProviders(<Explanation />, SAMPLE_DASHBOARD_ROUTE);
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Notes' })).toBeInTheDocument();
-    });
-    const notesHeading = screen.getByRole('heading', { name: 'Notes' });
+
+    const hurtingHeading = await screen.findByRole('heading', { name: "What's hurting" });
+    const helpingHeading = screen.getByRole('heading', { name: "What's helping" });
+    const hurting = hurtingHeading.parentElement as HTMLElement;
+    const helping = helpingHeading.parentElement as HTMLElement;
+    expect(within(hurting).getByText('Income present in 0/6 months')).toBeInTheDocument();
+    expect(within(helping).getByText('Strong income coverage: 2.42x')).toBeInTheDocument();
+  });
+
+  it('puts drivers it does not recognise in the Notes section', async () => {
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json(
+        buildReliabilityResponse({ response: { drivers: ['Some new driver from the backend'] } }),
+      ),
+    );
+    renderWithProviders(<Explanation />, SAMPLE_DASHBOARD_ROUTE);
+
+    const notesHeading = await screen.findByRole('heading', { name: 'Notes' });
     const notesSection = notesHeading.parentElement as HTMLElement;
-    expect(within(notesSection).getByText('Income present in 5/6 months')).toBeInTheDocument();
+    expect(within(notesSection).getByText('Some new driver from the backend')).toBeInTheDocument();
   });
 });

@@ -178,7 +178,7 @@ request fails, and an empty state if there is genuinely nothing to show.
 
 ## Testing
 
-There are 257 tests. They run with `yarn test`.
+There are 282 tests. They run with `yarn test`.
 
 For the helper functions (the API client, the date and money and scoring
 helpers, the functions that prepare the data) the test was written before the
@@ -236,9 +236,16 @@ The score is fetched again a couple of seconds after the last update.
   Scalability note below.
 - **Cursor pagination would suit live updates better.** It keeps scrolling
   consistent when items are inserted or removed while scrolling.
-- **Merchant category names cover only the codes seen in the data.** An
-  unrecognised code shows the raw number rather than a guessed name, on
-  purpose, so the tool never invents a label.
+- **Merchant category names come from the backend.** A code the backend has
+  no name for shows as the raw number, so the tool never invents a label.
+- **Only Resilience Adjustments shows earned points.** The API gives points
+  for the resilience lines but not for income regularity, income coverage or
+  essential payments, so those cards show their value and range. The frontend
+  doesn't work out points the backend didn't send.
+- **Some reasons are sorted by their wording.** The backend gives most reasons
+  no points, so the app reads the wording to place them. A count of at least
+  half, like 3/6, counts as helping. Wording the app doesn't recognise goes in
+  Notes.
 - **The transaction list was tested with 2000 rows of sample data.** The
   list only ever draws the rows on screen, so it is built to go well past
   that, but it has not been tried at 100,000 rows.

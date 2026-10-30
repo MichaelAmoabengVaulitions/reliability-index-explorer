@@ -6,6 +6,7 @@ import {
   ValidationError,
   fetchAllTransactions,
   fetchDiscovery,
+  fetchMerchantCategories,
   fetchReliability,
   fetchTransactionPage,
   transactionEventsUrl,
@@ -105,6 +106,22 @@ describe('fetchAllTransactions', () => {
     );
     await expect(fetchAllTransactions(window)).resolves.toEqual([]);
   }, 2000);
+});
+
+describe('fetchMerchantCategories', () => {
+  it('returns the code and name of each category', async () => {
+    const categories = await fetchMerchantCategories();
+    expect(categories).toContainEqual({
+      code: '6011',
+      name: 'ATM Withdrawals',
+      group: 'cash',
+    });
+  });
+
+  it('throws a ValidationError when the response has no category list', async () => {
+    vi.mocked(fetch).mockImplementation(async () => Response.json({}));
+    await expect(fetchMerchantCategories()).rejects.toBeInstanceOf(ValidationError);
+  });
 });
 
 describe('transactionEventsUrl', () => {
