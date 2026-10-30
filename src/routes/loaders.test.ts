@@ -1,12 +1,9 @@
 import { QueryClient } from '@tanstack/react-query';
 import { waitFor } from '@testing-library/react';
-import { http, HttpResponse } from 'msw';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { config } from '@/config';
 import { queryKeys } from '@/data/queryKeys';
 import { todayAsIsoDate } from '@/domain/dates';
-import { server } from '@/test-utils/msw/server';
 
 import { dashboardLoader, rootLoader, shouldReloadDashboard } from './loaders';
 
@@ -30,10 +27,8 @@ describe('rootLoader', () => {
   });
 
   it('does not fail when the backend is down', async () => {
-    server.use(
-      http.get(`${config.api.baseUrl}/`, () =>
-        HttpResponse.json({ error: 'boom' }, { status: 500 }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ error: 'boom' }, { status: 500 }),
     );
 
     await expect(rootLoader(queryClient)()).resolves.toBeNull();
@@ -82,10 +77,8 @@ describe('dashboardLoader', () => {
   });
 
   it('does not fail when the backend is down, so each card can show its own error', async () => {
-    server.use(
-      http.get('*/api/users/:userId/reliability', () =>
-        HttpResponse.json({ error: 'boom' }, { status: 500 }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ error: 'boom' }, { status: 500 }),
     );
 
     await expect(

@@ -69,7 +69,6 @@ The brief asks for the library choices to be documented.
 | React Router                 | Maps web addresses to screens, and holds the selected user, date and filters in the URL     | A filtered view can be shared by copying the link, and the back button works.                                                                    |
 | Recharts                     | Draws the monthly cashflow chart                                                            | A solid chart library, quick to set up.                                                                                                          |
 | TanStack Virtual             | Lets the transaction list hold thousands of rows                                            | Only the rows on screen are actually drawn, so scrolling stays smooth.                                                                           |
-| MSW (Mock Service Worker)    | Stands in for the backend during tests                                                      | Tests stay fast and predictable, and do not depend on the network.                                                                               |
 | Vitest with Testing Library  | Runs the tests                                                                              | Fast, and made for a Vite project.                                                                                                               |
 | Tailwind CSS                 | Styling                                                                                     | Its small styling classes keep the look consistent.                                                                                              |
 | lucide-react                 | Icons                                                                                       | A clean, light icon set.                                                                                                                         |
@@ -179,7 +178,7 @@ request fails, and an empty state if there is genuinely nothing to show.
 
 ## Testing
 
-There are 214 tests. They run with `yarn test`.
+There are 257 tests. They run with `yarn test`.
 
 For the helper functions (the API client, the date and money and scoring
 helpers, the functions that prepare the data) the test was written before the
@@ -187,7 +186,7 @@ function, watched fail, and then made to pass. These are the parts where a quiet
 later, so they have close coverage.
 
 For the React components the bar is lighter: each one has a test that draws
-it and checks the important text and behaviour appear. The mock backend (MSW)
+it and checks the important text and behaviour appear. A small fake `fetch`
 answers the network calls during tests, so the tests are fast and do not
 depend on the real backend being up.
 

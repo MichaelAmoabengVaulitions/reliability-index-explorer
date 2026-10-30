@@ -1,9 +1,4 @@
-import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
-
-import { config } from '@/config';
-
-import { server } from '../test-utils/msw/server';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   ApiError,
@@ -39,7 +34,7 @@ describe('fetchReliability', () => {
   });
 
   it('throws ValidationError when the response is missing required fields', async () => {
-    server.use(http.get('*/api/users/:userId/reliability', () => HttpResponse.json({})));
+    vi.mocked(fetch).mockImplementation(async () => Response.json({}));
     expect.assertions(2);
     try {
       await fetchReliability('user_1001', '2026-02-20');
@@ -98,19 +93,15 @@ describe('fetchAllTransactions', () => {
   });
 
   it('rejects when any page fails', async () => {
-    server.use(
-      http.get('*/api/users/:userId/transactions', () =>
-        HttpResponse.json({ error: 'boom' }, { status: 500 }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ error: 'boom' }, { status: 500 }),
     );
     await expect(fetchAllTransactions(window)).rejects.toBeInstanceOf(ApiError);
   });
 
   it('stops instead of looping forever when the backend reports more pages but sends an empty one', async () => {
-    server.use(
-      http.get('*/api/users/:userId/transactions', () =>
-        HttpResponse.json({ transactions: [], total: 10, page: 1, limit: 500, has_more: true }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ transactions: [], total: 10, page: 1, limit: 500, has_more: true }),
     );
     await expect(fetchAllTransactions(window)).resolves.toEqual([]);
   }, 2000);
@@ -135,63 +126,52 @@ describe('transactionEventsUrl', () => {
 
 describe('fetchDiscovery', () => {
   it('returns the users array when the discovery response carries that key', async () => {
-    server.use(
-      http.get(`${config.api.baseUrl}/`, () =>
-        HttpResponse.json({ users: ['user_1001', 'user_1002'] }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ users: ['user_1001', 'user_1002'] }),
     );
     expect((await fetchDiscovery()).userIds).toEqual(['user_1001', 'user_1002']);
   });
 
   it('returns the streaming host from the discovery response', async () => {
-    server.use(
-      http.get(`${config.api.baseUrl}/`, () =>
-        HttpResponse.json({
-          users: ['user_1001'],
-          sse: { base_url: 'https://stream.example.com/' },
-        }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({
+        users: ['user_1001'],
+        sse: { base_url: 'https://stream.example.com/' },
+      }),
     );
     expect((await fetchDiscovery()).streamBaseUrl).toBe('https://stream.example.com/');
   });
 
   it('falls back to the API host when the response has no streaming host', async () => {
+    vi.mocked(fetch).mockImplementation(async () => Response.json({ users: ['user_1001'] }));
     expect((await fetchDiscovery()).streamBaseUrl).toBe(API_BASE_URL);
   });
 
   it('also accepts a userIds array, since the spec does not pin the shape', async () => {
-    server.use(
-      http.get(`${config.api.baseUrl}/`, () => HttpResponse.json({ userIds: ['user_2001'] })),
-    );
+    vi.mocked(fetch).mockImplementation(async () => Response.json({ userIds: ['user_2001'] }));
     expect((await fetchDiscovery()).userIds).toEqual(['user_2001']);
   });
 
   it('also accepts an available_users array, the shape the real backend actually returns', async () => {
-    server.use(
-      http.get(`${config.api.baseUrl}/`, () =>
-        HttpResponse.json({
-          available_users: ['user_1001', 'user_1002', 'user_1003'],
-          name: 'Credit Builder API',
-        }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({
+        available_users: ['user_1001', 'user_1002', 'user_1003'],
+        name: 'Credit Builder API',
+      }),
     );
     expect((await fetchDiscovery()).userIds).toEqual(['user_1001', 'user_1002', 'user_1003']);
   });
 
   it('falls back to the sample user when none of the known keys are present, so the picker stays usable', async () => {
-    server.use(
-      http.get(`${config.api.baseUrl}/`, () =>
-        HttpResponse.json({ endpoints: ['/api/users/:userId/reliability'] }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ endpoints: ['/api/users/:userId/reliability'] }),
     );
     expect((await fetchDiscovery()).userIds).toEqual(['user_1001']);
   });
 
   it('throws an ApiError when the discovery endpoint itself fails, since the network being down is not the same as an unexpected response', async () => {
-    server.use(
-      http.get(`${config.api.baseUrl}/`, () =>
-        HttpResponse.json({ error: 'boom' }, { status: 500 }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ error: 'boom' }, { status: 500 }),
     );
     await expect(fetchDiscovery()).rejects.toBeInstanceOf(ApiError);
   });

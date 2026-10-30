@@ -1,12 +1,8 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { config } from '@/config';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';
-
-import { server } from '../test-utils/msw/server';
 
 import { UserPicker } from './UserPicker';
 
@@ -24,10 +20,8 @@ describe('UserPicker', () => {
   });
 
   it('shows an error status when the discovery endpoint fails', async () => {
-    server.use(
-      http.get(`${config.api.baseUrl}/`, () =>
-        HttpResponse.json({ error: 'boom' }, { status: 500 }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ error: 'boom' }, { status: 500 }),
     );
     renderWithProviders(<UserPicker />);
     await waitFor(() => {

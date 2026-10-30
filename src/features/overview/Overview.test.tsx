@@ -1,9 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
-import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { buildReliabilityResponse } from '@/test-utils/fixtures/reliability';
-import { server } from '@/test-utils/msw/server';
 import { SAMPLE_DASHBOARD_ROUTE, renderWithProviders } from '@/test-utils/renderWithProviders';
 
 import { Overview } from './Overview';
@@ -38,10 +36,8 @@ describe('Overview', () => {
   });
 
   it('shows a dash for the income vs expenses tile when the coverage ratio is null', async () => {
-    server.use(
-      http.get('*/api/users/:userId/reliability', () =>
-        HttpResponse.json(buildReliabilityResponse({ metrics: { income_coverage_ratio: null } })),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json(buildReliabilityResponse({ metrics: { income_coverage_ratio: null } })),
     );
     renderWithProviders(<Overview />, SAMPLE_DASHBOARD_ROUTE);
     await waitFor(() => {
