@@ -1,5 +1,6 @@
-import { useParams } from 'react-router';
-
+import { useDashboardParams } from '@/data/useDashboardParams';
+import { useTransactionEventStream } from '@/data/useTransactionEventStream';
+import { windowFor } from '@/domain/dates';
 import { Breakdown } from '@/features/breakdown/Breakdown';
 import { Cashflow } from '@/features/cashflow/Cashflow';
 import { Explanation } from '@/features/explanation/Explanation';
@@ -15,7 +16,10 @@ import { ErrorBoundary } from '@/ui/ErrorBoundary';
  * different user clears whatever error was caught.
  */
 export function Dashboard() {
-  const { userId } = useParams<{ userId: string }>();
+  const { userId, from } = useDashboardParams();
+  const scoringWindow = windowFor(from);
+  // The stream sits here because it updates data shared by several cards.
+  const stream = useTransactionEventStream(userId, scoringWindow.start, scoringWindow.end);
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -45,7 +49,7 @@ export function Dashboard() {
 
       <div className="lg:col-span-3">
         <ErrorBoundary resetKey={userId}>
-          <Explorer />
+          <Explorer stream={stream} />
         </ErrorBoundary>
       </div>
     </div>

@@ -45,7 +45,7 @@ export function UserPicker() {
           <option value="" disabled>
             Choose a user…
           </option>
-          {data?.map((id) => (
+          {data?.userIds.map((id) => (
             <option key={id} value={id} className="bg-slate-900 text-white">
               {id}
             </option>

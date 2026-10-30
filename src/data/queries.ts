@@ -1,10 +1,14 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import { fetchAllTransactions, fetchAvailableUserIds, fetchReliability } from '@/api/client';
-import type { TransactionEvent } from '@/api/schemas';
+import { fetchAllTransactions, fetchDiscovery, fetchReliability } from '@/api/client';
 
 import { queryKeys } from './queryKeys';
-import { applyTransactionEvents, toState, type TransactionState } from './transactionState';
+import {
+  applyTransactionEvents,
+  toState,
+  type LiveEvent,
+  type TransactionState,
+} from './transactionState';
 
 /**
  * What we keep in the cache for a user's transactions. `state` holds the
@@ -13,7 +17,7 @@ import { applyTransactionEvents, toState, type TransactionState } from './transa
  */
 export interface TransactionsQueryData {
   state: TransactionState;
-  liveEvents: TransactionEvent[];
+  liveEvents: LiveEvent[];
 }
 
 /*
@@ -22,7 +26,8 @@ export interface TransactionsQueryData {
  */
 export const discoveryQuery = queryOptions({
   queryKey: queryKeys.discovery,
-  queryFn: fetchAvailableUserIds,
+  queryFn: fetchDiscovery,
+  staleTime: Infinity,
 });
 
 export function reliabilityQuery(userId: string, from: string) {
@@ -39,7 +44,11 @@ export function transactionsQuery(userId: string, from: string, to: string) {
     queryFn: async ({ client }): Promise<TransactionsQueryData> => {
       const transactions = await fetchAllTransactions({ userId, from, to });
       const liveEvents = client.getQueryData<TransactionsQueryData>(queryKey)?.liveEvents ?? [];
-      return { state: applyTransactionEvents(toState(transactions), liveEvents), liveEvents };
+      const state = applyTransactionEvents(
+        toState(transactions),
+        liveEvents.map((liveEvent) => liveEvent.event),
+      );
+      return { state, liveEvents };
     },
   });
 }

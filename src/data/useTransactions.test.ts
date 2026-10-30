@@ -54,10 +54,11 @@ describe('useTransactions', () => {
      * A live event arrives and is recorded on the cache, the way the
      * transaction event stream does it.
      */
-    const liveEvent: TransactionEvent = {
+    const event: TransactionEvent = {
       type: 'TRANSACTION_ADDED',
       transaction: buildTransaction({ id: 'tx_live' }),
     };
+    const liveEvent = { id: '1', event };
     act(() => {
       queryClient.setQueryData<TransactionsQueryData>(
         queryKeys.transactions(window.userId, window.from, window.to),

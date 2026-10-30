@@ -1,12 +1,18 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
-import { API_BASE_URL } from '@/api/client';
+import { transactionEventsUrl } from '@/api/client';
 import { transactionEventSchema, type TransactionEvent } from '@/api/schemas';
+import { config } from '@/config';
 
-import type { TransactionsQueryData } from './queries';
+import { discoveryQuery, type TransactionsQueryData } from './queries';
 import { queryKeys } from './queryKeys';
-import { applyTransactionEvent } from './transactionState';
+import {
+  applyTransactionEvents,
+  fitEventToWindow,
+  onlyNewEvents,
+  type LiveEvent,
+} from './transactionState';
 
 /**
  * The connection state of the live updates stream.
@@ -48,7 +54,8 @@ const EVENT_TYPE_NAMES: readonly TransactionEvent['type'][] = [
  * add, update and delete events as they happen. Every event is checked
  * against the same description the rest of the app uses, then applied to the
  * stored transactions for the current user, so the screen updates without
- * asking the backend again.
+ * asking the backend again. Events are applied in small batches, and the
+ * score is fetched again once they stop.
  *
  * Returns the connection state and a running count of how many live updates
  * have been applied, so the component can show a "Live" badge and how much
@@ -56,14 +63,20 @@ const EVENT_TYPE_NAMES: readonly TransactionEvent['type'][] = [
  */
 export function useTransactionEventStream(userId: string, from: string, to: string): StreamState {
   const queryClient = useQueryClient();
+  const { data: discovery } = useQuery(discoveryQuery);
   /*
    * EventSource is a browser feature, and is missing in the test environment.
    * When it is not there we simply do nothing: the live badge stays idle and
-   * tests keep working.
+   * tests keep working. We also wait for discovery, which says where to connect.
    */
   const eventSourceAvailable = typeof EventSource !== 'undefined';
   const shouldSubscribe =
-    eventSourceAvailable && userId.length > 0 && from.length > 0 && to.length > 0;
+    eventSourceAvailable &&
+    discovery !== undefined &&
+    userId.length > 0 &&
+    from.length > 0 &&
+    to.length > 0;
+  const streamBaseUrl = discovery?.streamBaseUrl;
 
   /*
    * We keep only the connecting/open/closed part of the status here. The
@@ -93,9 +106,9 @@ export function useTransactionEventStream(userId: string, from: string, to: stri
   }
 
   useEffect(() => {
-    if (!shouldSubscribe) return;
+    if (!shouldSubscribe || streamBaseUrl === undefined) return;
 
-    const source = new EventSource(`${API_BASE_URL}/api/users/${userId}/transaction-events`);
+    const source = new EventSource(transactionEventsUrl(streamBaseUrl, userId));
     source.onopen = () => setConnectionStatus('open');
     /*
      * EventSource raises an error for any broken connection, including the
@@ -111,6 +124,44 @@ export function useTransactionEventStream(userId: string, from: string, to: stri
     };
 
     const cacheKey = queryKeys.transactions(userId, from, to);
+    let pendingEvents: LiveEvent[] = [];
+    let batchTimer: ReturnType<typeof setTimeout> | undefined;
+    let scoreRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const scheduleBatch = (): void => {
+      batchTimer = setTimeout(applyPendingEvents, config.stream.batchMs);
+    };
+
+    const applyPendingEvents = (): void => {
+      batchTimer = undefined;
+      const cached = queryClient.getQueryData<TransactionsQueryData>(cacheKey);
+      // Still on the first load, so hold on to the events and try again shortly.
+      if (cached === undefined) {
+        scheduleBatch();
+        return;
+      }
+
+      const newEvents = onlyNewEvents(cached.liveEvents, pendingEvents);
+      pendingEvents = [];
+      if (newEvents.length === 0) return;
+
+      queryClient.setQueryData<TransactionsQueryData>(cacheKey, {
+        state: applyTransactionEvents(
+          cached.state,
+          newEvents.map((liveEvent) => liveEvent.event),
+        ),
+        liveEvents: [...cached.liveEvents, ...newEvents],
+      });
+      setApplied((current) => ({
+        streamKey: current.streamKey,
+        count: current.count + newEvents.length,
+      }));
+
+      clearTimeout(scoreRefreshTimer);
+      scoreRefreshTimer = setTimeout(() => {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.reliability(userId, to) });
+      }, config.stream.scoreRefreshDelayMs);
+    };
 
     const handleEvent = (event: MessageEvent): void => {
       let payload: unknown;
@@ -128,15 +179,11 @@ export function useTransactionEventStream(userId: string, from: string, to: stri
         );
         return;
       }
-      queryClient.setQueryData<TransactionsQueryData>(cacheKey, (previous) => {
-        if (previous === undefined) return previous;
-        return {
-          ...previous,
-          state: applyTransactionEvent(previous.state, parsed.data),
-          liveEvents: [...previous.liveEvents, parsed.data],
-        };
-      });
-      setApplied((current) => ({ streamKey: current.streamKey, count: current.count + 1 }));
+      const fittedEvent = fitEventToWindow(parsed.data, from, to);
+      if (fittedEvent === undefined) return;
+
+      pendingEvents.push({ id: event.lastEventId, event: fittedEvent });
+      if (batchTimer === undefined) scheduleBatch();
     };
 
     for (const eventName of EVENT_TYPE_NAMES) {
@@ -145,8 +192,10 @@ export function useTransactionEventStream(userId: string, from: string, to: stri
 
     return () => {
       source.close();
+      clearTimeout(batchTimer);
+      clearTimeout(scoreRefreshTimer);
     };
-  }, [shouldSubscribe, userId, from, to, queryClient]);
+  }, [shouldSubscribe, streamBaseUrl, userId, from, to, queryClient]);
 
   return shouldSubscribe
     ? { status: connectionStatus, eventCount: applied.count }
