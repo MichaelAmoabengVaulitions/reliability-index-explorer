@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/api/client';
 import { transactionEventSchema, type TransactionEvent } from '@/api/schemas';
 
+import type { TransactionsQueryData } from './queries';
 import { queryKeys } from './queryKeys';
 import { applyTransactionEvent } from './transactionState';
-import { type TransactionsQueryData } from './useTransactions';
 
 /**
  * The connection state of the live updates stream.

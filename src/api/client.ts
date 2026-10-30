@@ -119,27 +119,22 @@ interface FetchAllTransactionsOptions {
   userId: string;
   from: string;
   to: string;
-  onProgress?: (loaded: number, total: number) => void;
 }
 
 /*
  * Asks the backend for one page at a time and joins the results into a single
- * list. The optional onProgress function is called once after every page, so
- * the screen can show a "loaded N of M" line while the load is still in flight.
- * We stop when the backend says there is no more data (has_more is false).
+ * list. We stop when the backend says there is no more data (has_more is false).
  */
 export async function fetchAllTransactions({
   userId,
   from,
   to,
-  onProgress,
 }: FetchAllTransactionsOptions): Promise<Transaction[]> {
   const all: Transaction[] = [];
   let page = FIRST_PAGE;
   while (true) {
     const result = await fetchTransactionPage({ userId, from, to, page });
     all.push(...result.transactions);
-    onProgress?.(all.length, result.total);
     /*
      * Stop when there are no more pages, or when the backend reports more but
      * sends an empty one. Without the empty-page check, a wrong has_more flag

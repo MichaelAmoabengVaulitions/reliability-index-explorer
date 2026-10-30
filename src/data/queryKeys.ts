@@ -6,6 +6,7 @@
  */
 export const queryKeys = {
   all: ['reliability'] as const,
+  discovery: ['reliability', 'discovery'] as const,
   reliability: (userId: string, from: string) => [...queryKeys.all, 'score', userId, from] as const,
   transactions: (userId: string, from: string, to: string) =>
     [...queryKeys.all, 'transactions', userId, from, to] as const,

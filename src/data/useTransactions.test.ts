@@ -5,8 +5,9 @@ import type { TransactionEvent } from '@/api/schemas';
 import { buildTransaction } from '@/test-utils/fixtures/transactions';
 import { createQueryClientAndWrapper, createQueryWrapper } from '@/test-utils/queryWrapper';
 
+import type { TransactionsQueryData } from './queries';
 import { queryKeys } from './queryKeys';
-import { useTransactions, type TransactionsQueryData } from './useTransactions';
+import { useTransactions } from './useTransactions';
 
 const window = { userId: 'user_1001', from: '2025-09-01', to: '2026-02-20' };
 
@@ -20,20 +21,25 @@ describe('useTransactions', () => {
 
     expect(result.current.data?.state.allIds).toHaveLength(2000);
     expect(result.current.data?.liveEvents).toEqual([]);
-    expect(result.current.data?.loaded).toBe(2000);
-    expect(result.current.data?.total).toBe(2000);
   });
 
-  it('gives the total count from the very first page, so a "loaded N of M" line can show before all pages are in', async () => {
-    const { result } = renderHook(() => useTransactions(window.userId, window.from, window.to), {
-      wrapper: createQueryWrapper(),
-    });
+  it('stays loading until every page is in, so the screen never shows a partial or empty list', async () => {
+    const countsSeen: number[] = [];
+    const { result } = renderHook(
+      () => {
+        const transactions = useTransactions(window.userId, window.from, window.to);
+        if (transactions.data !== undefined) {
+          countsSeen.push(transactions.data.state.allIds.length);
+        }
+        return transactions;
+      },
+      { wrapper: createQueryWrapper() },
+    );
 
-    // Wait for at least one page to arrive (loaded > 0); the total should already be the final number.
-    await waitFor(() => {
-      expect(result.current.data?.total).toBe(2000);
-      expect(result.current.data?.loaded).toBeGreaterThan(0);
-    });
+    expect(result.current.isLoading).toBe(true);
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(new Set(countsSeen)).toEqual(new Set([2000]));
   });
 
   it('keeps live stream events when the transactions are fetched again', async () => {

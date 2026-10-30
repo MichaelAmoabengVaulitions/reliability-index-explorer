@@ -5,10 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { buildTransaction } from '@/test-utils/fixtures/transactions';
 
+import type { TransactionsQueryData } from './queries';
 import { queryKeys } from './queryKeys';
 import { toState, type TransactionState } from './transactionState';
 import { useTransactionEventStream } from './useTransactionEventStream';
-import { type TransactionsQueryData } from './useTransactions';
 
 interface SimpleListener {
   (event: MessageEvent): void;
@@ -71,8 +71,6 @@ function seedTransactionsCache(queryClient: QueryClient, state: TransactionState
   queryClient.setQueryData<TransactionsQueryData>(queryKeys.transactions(USER_ID, FROM, TO), {
     state,
     liveEvents: [],
-    loaded: state.allIds.length,
-    total: state.allIds.length,
   });
 }
 

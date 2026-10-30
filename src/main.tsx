@@ -7,6 +7,7 @@ import { RouterProvider } from 'react-router/dom';
 
 import { createQueryClient } from './data/queryClient.ts';
 import { Dashboard } from './routes/Dashboard.tsx';
+import { dashboardLoader, rootLoader, shouldReloadDashboard } from './routes/loaders.ts';
 import { Root } from './routes/Root.tsx';
 
 import './index.css';
@@ -21,7 +22,18 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <Root />,
-    children: [{ path: 'users/:userId', element: <Dashboard /> }],
+    loader: rootLoader(queryClient),
+    shouldRevalidate: () => false,
+    // The loaders don't wait for data, so this only shows for a moment.
+    hydrateFallbackElement: <></>,
+    children: [
+      {
+        path: 'users/:userId',
+        element: <Dashboard />,
+        loader: dashboardLoader(queryClient),
+        shouldRevalidate: shouldReloadDashboard,
+      },
+    ],
   },
 ]);
 
