@@ -2,13 +2,9 @@ import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { config } from '@/config';
+import { useDashboardParams } from '@/data/useDashboardParams';
 import { categoryLabel } from '@/domain/categories';
-import {
-  useFilters,
-  type SortDirection,
-  type SortField,
-  type TransactionSign,
-} from '@/store/filters';
+import type { SortDirection, SortField, TransactionSign } from '@/domain/dashboardParams';
 
 interface FiltersProps {
   /** Category codes present in the loaded transactions; these become the dropdown options. */
@@ -32,65 +28,56 @@ const SORT_OPTIONS: ReadonlyArray<{
   { value: 'amount:desc', label: 'Largest amount', field: 'amount', direction: 'desc' },
   { value: 'amount:asc', label: 'Smallest amount', field: 'amount', direction: 'asc' },
   { value: 'merchant_name:asc', label: 'Merchant A → Z', field: 'merchant_name', direction: 'asc' },
+  {
+    value: 'merchant_name:desc',
+    label: 'Merchant Z → A',
+    field: 'merchant_name',
+    direction: 'desc',
+  },
 ];
 
 /**
  * The toolbar above the transaction list: a category picker, a money in/out
  * toggle, a search box and a sort menu. Search keystrokes wait for a short
- * pause before they reach the filter store, so the list is not re-filtered on
- * every key press.
+ * pause before they reach the URL, so the list is not re-filtered on every
+ * key press.
  */
 export function Filters({ availableCategoryCodes }: FiltersProps) {
-  const categoryCodes = useFilters((state) => state.categoryCodes);
-  const setCategories = useFilters((state) => state.setCategories);
-  const sign = useFilters((state) => state.sign);
-  const setSign = useFilters((state) => state.setSign);
-  const storeSearch = useFilters((state) => state.search);
-  const setSearch = useFilters((state) => state.setSearch);
-  const sort = useFilters((state) => state.sort);
-  const setSort = useFilters((state) => state.setSort);
+  const { filters, updateFilters } = useDashboardParams();
+  const { categoryCodes, sign, search, sort } = filters;
 
-  const [searchDraft, setSearchDraft] = useState(storeSearch);
+  const [searchDraft, setSearchDraft] = useState(search);
 
   /*
-   * The last search text this component sent to the store. When the store's
-   * search value differs from this, the change came from elsewhere (the Clear
-   * filters button, or a shared link being opened), and the box below should
-   * follow it rather than overwrite it.
+   * The last search text this component sent to the URL. When the URL's
+   * search differs from this, the change came from elsewhere (the Clear
+   * filters button, or the back button), and the box below should follow it
+   * rather than overwrite it.
    */
-  const lastSentSearch = useRef(storeSearch);
+  const lastSentSearch = useRef(search);
 
-  /*
-   * Send what the visitor has typed into the store only after they pause for
-   * a moment, so the list is not re-filtered on every key press.
-   */
   useEffect(() => {
     const handle = setTimeout(() => {
-      if (searchDraft !== storeSearch) {
+      if (searchDraft !== search) {
         lastSentSearch.current = searchDraft;
-        setSearch(searchDraft);
+        updateFilters({ search: searchDraft });
       }
     }, config.ui.searchDebounceMs);
     return () => clearTimeout(handle);
-  }, [searchDraft, storeSearch, setSearch]);
+  }, [searchDraft, search, updateFilters]);
 
-  /*
-   * Follow a search value that changed outside this component, so resetting
-   * the filters or opening a shared link updates the search box to match.
-   */
   useEffect(() => {
-    if (storeSearch !== lastSentSearch.current) {
-      lastSentSearch.current = storeSearch;
-      setSearchDraft(storeSearch);
+    if (search !== lastSentSearch.current) {
+      lastSentSearch.current = search;
+      setSearchDraft(search);
     }
-  }, [storeSearch]);
+  }, [search]);
 
   function toggleCategory(code: string) {
-    if (categoryCodes.includes(code)) {
-      setCategories(categoryCodes.filter((existing) => existing !== code));
-    } else {
-      setCategories([...categoryCodes, code]);
-    }
+    const nextCodes = categoryCodes.includes(code)
+      ? categoryCodes.filter((existing) => existing !== code)
+      : [...categoryCodes, code];
+    updateFilters({ categoryCodes: nextCodes });
   }
 
   const currentSortValue = `${sort.field}:${sort.direction}` as const;
@@ -121,7 +108,7 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
           <button
             key={option.value}
             type="button"
-            onClick={() => setSign(option.value)}
+            onClick={() => updateFilters({ sign: option.value })}
             aria-pressed={sign === option.value}
             className={`px-3 py-1 text-sm font-medium ${
               sign === option.value
@@ -167,7 +154,9 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
           value={currentSortValue}
           onChange={(event) => {
             const next = SORT_OPTIONS.find((option) => option.value === event.target.value);
-            if (next !== undefined) setSort({ field: next.field, direction: next.direction });
+            if (next !== undefined) {
+              updateFilters({ sort: { field: next.field, direction: next.direction } });
+            }
           }}
           className="rounded-md border border-slate-300 bg-white py-1.5 pl-2 pr-7 text-sm focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
         >

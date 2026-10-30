@@ -65,9 +65,8 @@ The brief asks for the library choices to be documented.
 | React with TypeScript        | The app itself                                                                              | The combination the brief asks for. TypeScript catches mistakes before the code runs.                                                            |
 | Vite                         | Runs the app while developing, and builds the final version                                 | Starts and rebuilds fast.                                                                                                                        |
 | TanStack Query (React Query) | Fetches backend data, caches it, tracks loading and error states                            | Removes a large amount of fetching and caching code that would otherwise be written by hand.                                                     |
-| Zustand                      | Holds the small pieces of information the analyst controls, such as the active filters      | Light and simple, and several components can read the same information without passing it down by hand.                                          |
 | Zod                          | Checks that every backend response has the fields the app expects, at the moment it arrives | If the backend sends something unexpected, the app says so at that exact spot with a clear message, instead of failing in a confusing way later. |
-| React Router                 | Maps web addresses to screens, and keeps the filters in the address bar                     | A filtered view can be shared by copying the link.                                                                                               |
+| React Router                 | Maps web addresses to screens, and holds the selected user, date and filters in the URL     | A filtered view can be shared by copying the link, and the back button works.                                                                    |
 | Recharts                     | Draws the monthly cashflow chart                                                            | A solid chart library, quick to set up.                                                                                                          |
 | TanStack Virtual             | Lets the transaction list hold thousands of rows                                            | Only the rows on screen are actually drawn, so scrolling stays smooth.                                                                           |
 | MSW (Mock Service Worker)    | Stands in for the backend during tests                                                      | Tests stay fast and predictable, and do not depend on the network.                                                                               |
@@ -84,7 +83,6 @@ Each folder under `src` has one job.
 | `src/api`        | Everything that talks to the backend: the fetch functions, the Zod checks that describe each response, and the two kinds of error the app reports.                                                                              |
 | `src/domain`     | Small helper functions with no link to React or the network: money formatting, date maths, the scoring helpers, the merchant category names.                                                                                    |
 | `src/data`       | The link between the backend and the screens: the parts that fetch and cache backend data, and the shared transaction data that live updates are combined into.                                                                 |
-| `src/store`      | The Zustand stores for the filters and the selected user, plus the piece that keeps those in step with the address bar.                                                                                                         |
 | `src/features`   | One folder per dashboard feature: overview, breakdown, cashflow, explanation, transactions. Each folder also holds the logic only that feature needs: the cashflow card's monthly totals, the explorer's filtering and sorting. |
 | `src/routes`     | The page frame: the sidebar, the top bar, the user picker, and the dashboard that arranges the feature cards.                                                                                                                   |
 | `src/ui`         | Small building blocks reused across features: the card, the loading placeholder, the empty state, the error state, and the error catcher.                                                                                       |
@@ -95,7 +93,7 @@ Each folder under `src` has one job.
 One rule keeps the feature folders from tangling: a feature folder never
 imports from another feature folder. So a feature folder holds only the code
 that one feature uses, and anything two or more features need lives in a
-shared folder instead: `data`, `domain`, `store` or `ui`.
+shared folder instead: `data`, `domain` or `ui`.
 
 This is why the cashflow totals and the transaction filtering each sit with
 the one feature that uses them, while the code that talks to the backend
@@ -115,16 +113,14 @@ flowchart TD
   Hooks[data: fetch and cache backend data]
   Shapers[features: prepare the data for each card]
   Features[features: the five dashboard cards]
-  Stores[store: filters and selected user]
-  URL[Address bar]
+  URL[Address bar: user, date and filters]
   Live[Live transaction updates]
 
   Backend --> Client
   Client --> Hooks
   Hooks --> Shapers
   Shapers --> Features
-  Stores --> Features
-  Stores <--> URL
+  URL <--> Features
   Live --> Hooks
   Hooks --> Features
 ```
@@ -132,7 +128,7 @@ flowchart TD
 The journey of a score, step by step:
 
 1. The analyst picks a user. The user id goes into the address bar as part of
-   the path, and into the store that holds the selected user.
+   the path.
 2. The app asks the backend for that user's score. The response passes through
    the Zod check, which confirms it has the expected fields, then React Query
    caches it.
@@ -141,7 +137,7 @@ The journey of a score, step by step:
    there are no more, and reports progress as it goes.
 4. The transactions are stored in a lookup table that finds each one by its
    id, which makes later updates quick and removes any duplicates.
-5. The filter store holds what the analyst has narrowed down to. The explorer
+5. The address bar holds what the analyst has narrowed down to. The explorer
    filters and sorts the stored transactions and shows the result.
 6. The cashflow card sums the same transactions into monthly totals.
 7. If a live update arrives, it is applied straight to the cached data, and
@@ -149,21 +145,20 @@ The journey of a score, step by step:
 
 ## State management decisions
 
-State is split into three kinds, each kept where it belongs.
+State is split into two kinds, each kept where it belongs.
 
 **Backend data** (the score, the transactions) lives in React Query. React
 Query owns fetching, caching, retrying, and the loading and error states. A
 component never keeps its own copy of backend data.
 
-**State the analyst controls** (the filters, the chosen user) lives in
-Zustand. It is small, it is not backend data, and several components read it,
-so a shared store fits better than passing it down by hand from one component
-to the next.
+**State the analyst controls** (the chosen user, the date, the filters and the
+sort) lives in the URL, and nowhere else. Components read it through
+`useDashboardParams`, so there is only one copy of each value. Opening a saved
+link restores the same view, and the back button works. Anything in the URL
+that doesn't make sense falls back to its default.
 
-**The address bar** is treated as the shareable record of the filters. When a
-filter changes, the address bar is updated a short moment later, so a burst of
-typing in the search box counts as one change rather than one per keystroke.
-Opening a saved link restores the same filtered view.
+The search box keeps what is being typed in local state, and updates the URL
+after a short pause, so a burst of typing counts as one change.
 
 NOTE: THERE ARE CUSTOM HOOKS WHICH SHOULD BE RATHER UTILITY FUNCTIONS. IT DOES NOT HURT THE PROJECT BUT THEY FOLLOW THE RULES OF CUSTOM HOOK WHICH IN PRACTICE TJEY SHOULD NOT
 

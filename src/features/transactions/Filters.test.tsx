@@ -1,69 +1,110 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { config } from '@/config';
-import { useFilters } from '@/store/filters';
+import { renderWithProviders } from '@/test-utils/renderWithProviders';
 
 import { Filters } from './Filters';
 
-beforeEach(() => {
-  useFilters.getState().reset();
-});
-
-afterEach(() => {
-  useFilters.getState().reset();
-});
+function urlParam(search: string, name: string): string | null {
+  return new URLSearchParams(search).get(name);
+}
 
 describe('Filters', () => {
   it('shows the search box and the inflow/outflow controls', () => {
-    render(<Filters availableCategoryCodes={['5411']} />);
+    renderWithProviders(<Filters availableCategoryCodes={['5411']} />);
 
     expect(screen.getByPlaceholderText(/search merchant/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Inflow' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Outflow' })).toBeInTheDocument();
   });
 
-  it('sends what the analyst types into the filter store', async () => {
+  it('shows the choices already in the URL', () => {
+    renderWithProviders(<Filters availableCategoryCodes={['5411']} />, {
+      initialEntries: ['/?search=coffee&sign=inflow&categories=5411&sort=merchant_name:desc'],
+    });
+
+    expect(screen.getByPlaceholderText(/search merchant/i)).toHaveValue('coffee');
+    expect(screen.getByRole('button', { name: 'Inflow' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Categories (1)')).toBeInTheDocument();
+    expect(screen.getByLabelText(/sort/i)).toHaveValue('merchant_name:desc');
+  });
+
+  it('puts what the analyst types into the URL', async () => {
     const user = userEvent.setup();
-    render(<Filters availableCategoryCodes={[]} />);
+    const { router } = renderWithProviders(<Filters availableCategoryCodes={[]} />);
 
     await user.type(screen.getByPlaceholderText(/search merchant/i), 'coffee');
 
     await waitFor(() => {
-      expect(useFilters.getState().search).toBe('coffee');
+      expect(urlParam(router.state.location.search, 'search')).toBe('coffee');
     });
   });
 
-  it('clears the search box when filters are reset and does not restore the old term', async () => {
+  it('puts the money in or out choice into the URL', async () => {
     const user = userEvent.setup();
-    render(<Filters availableCategoryCodes={[]} />);
+    const { router } = renderWithProviders(<Filters availableCategoryCodes={[]} />);
+
+    await user.click(screen.getByRole('button', { name: 'Outflow' }));
+
+    await waitFor(() => {
+      expect(urlParam(router.state.location.search, 'sign')).toBe('outflow');
+    });
+  });
+
+  it('adds a category to the URL, and removes it when it is unticked', async () => {
+    const user = userEvent.setup();
+    const { router } = renderWithProviders(<Filters availableCategoryCodes={['5411']} />);
+
+    await user.click(screen.getByText('Categories'));
+    await user.click(screen.getByRole('checkbox'));
+    await waitFor(() => {
+      expect(urlParam(router.state.location.search, 'categories')).toBe('5411');
+    });
+
+    await user.click(screen.getByRole('checkbox'));
+    await waitFor(() => {
+      expect(urlParam(router.state.location.search, 'categories')).toBeNull();
+    });
+  });
+
+  it('puts the sort choice into the URL', async () => {
+    const user = userEvent.setup();
+    const { router } = renderWithProviders(<Filters availableCategoryCodes={[]} />);
+
+    await user.selectOptions(screen.getByLabelText(/sort/i), 'amount:desc');
+
+    await waitFor(() => {
+      expect(urlParam(router.state.location.search, 'sort')).toBe('amount:desc');
+    });
+  });
+
+  it('clears the search box when the URL search is cleared and does not restore the old term', async () => {
+    const user = userEvent.setup();
+    const { router } = renderWithProviders(<Filters availableCategoryCodes={[]} />);
     const searchBox = screen.getByPlaceholderText(/search merchant/i);
 
     await user.type(searchBox, 'no-such-merchant');
     await waitFor(() => {
-      expect(useFilters.getState().search).toBe('no-such-merchant');
+      expect(urlParam(router.state.location.search, 'search')).toBe('no-such-merchant');
     });
 
-    /*
-     * Stands in for the "Clear filters" button in the empty state, which
-     * calls reset() on the filter store.
-     */
-    act(() => {
-      useFilters.getState().reset();
+    // Stands in for the "Clear filters" button or the back button.
+    await act(async () => {
+      await router.navigate('/');
     });
 
-    expect(searchBox).toHaveValue('');
+    await waitFor(() => {
+      expect(searchBox).toHaveValue('');
+    });
 
-    /*
-     * Wait past the search debounce window: the old term must not creep back
-     * into the store once the pending keystrokes settle.
-     */
+    // Wait past the debounce: the old term must not creep back into the URL.
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, config.ui.searchDebounceMs * 2));
     });
 
-    expect(useFilters.getState().search).toBe('');
+    expect(urlParam(router.state.location.search, 'search')).toBeNull();
     expect(searchBox).toHaveValue('');
   });
 });

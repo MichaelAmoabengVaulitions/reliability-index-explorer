@@ -1,26 +1,14 @@
 import { screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
 
-import { useFilters } from '@/store/filters';
-import { useSelectedUser } from '@/store/selectedUser';
-import { renderWithProviders } from '@/test-utils/renderWithProviders';
+import { SAMPLE_DASHBOARD_ROUTE, renderWithProviders } from '@/test-utils/renderWithProviders';
 
 import { Explorer } from './Explorer';
 
-beforeEach(() => {
-  useSelectedUser.getState().setUserId('user_1001');
-  useSelectedUser.getState().setFrom('2026-02-20');
-  useFilters.getState().reset();
-});
-
-afterEach(() => {
-  useSelectedUser.getState().setUserId('');
-  useFilters.getState().reset();
-});
-
 describe('Explorer', () => {
   it('renders the transactions card heading once data resolves', async () => {
-    renderWithProviders(<Explorer />);
+    renderWithProviders(<Explorer />, SAMPLE_DASHBOARD_ROUTE);
     await waitFor(
       () => {
         expect(screen.getByRole('heading', { name: 'Transactions' })).toBeInTheDocument();
@@ -30,7 +18,7 @@ describe('Explorer', () => {
   });
 
   it('shows the count footer with the total transactions loaded', async () => {
-    renderWithProviders(<Explorer />);
+    renderWithProviders(<Explorer />, SAMPLE_DASHBOARD_ROUTE);
     await waitFor(
       () => {
         expect(screen.getByText(/Showing/)).toBeInTheDocument();
@@ -42,5 +30,25 @@ describe('Explorer', () => {
      * "visible" and "total" land on 2000 when no filters are applied.
      */
     expect(screen.getAllByText('2000')).toHaveLength(2);
+  });
+
+  it('applies filters from the URL and clears them, keeping the date', async () => {
+    const user = userEvent.setup();
+    const { router } = renderWithProviders(<Explorer />, {
+      ...SAMPLE_DASHBOARD_ROUTE,
+      initialEntries: ['/users/user_1001?from=2026-02-20&search=no-such-merchant'],
+    });
+
+    const clearButton = await screen.findByRole(
+      'button',
+      { name: 'Clear filters' },
+      { timeout: 4000 },
+    );
+    await user.click(clearButton);
+
+    await waitFor(() => {
+      expect(router.state.location.search).toBe('?from=2026-02-20');
+    });
+    expect(await screen.findByText(/Showing/)).toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import type { Transaction } from '@/api/schemas';
-import type { TransactionSign, TransactionSort } from '@/store/filters';
+import type { TransactionSign, TransactionSort } from '@/domain/dashboardParams';
 
 export interface TransactionFilters {
   categoryCodes?: string[];

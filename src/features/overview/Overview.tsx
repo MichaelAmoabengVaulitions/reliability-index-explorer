@@ -1,8 +1,8 @@
 import { config } from '@/config';
+import { useDashboardParams } from '@/data/useDashboardParams';
 import { useReliability } from '@/data/useReliability';
 import { formatMonth, parseISODate, windowFor } from '@/domain/dates';
 import { captionForDriver, formatCoverageRatio } from '@/domain/scoring';
-import { useSelectedUser } from '@/store/selectedUser';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
@@ -60,8 +60,7 @@ function MetricTile({ label, value, description }: MetricTileProps) {
  * Explanation card.
  */
 export function Overview() {
-  const userId = useSelectedUser((state) => state.userId);
-  const from = useSelectedUser((state) => state.from);
+  const { userId, from } = useDashboardParams();
   const reliability = useReliability(userId, from);
 
   if (reliability.isLoading) {

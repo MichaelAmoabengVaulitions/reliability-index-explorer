@@ -21,8 +21,7 @@ export function useReliability(
     queryFn: () => fetchReliability(userId, from),
     /*
      * Skip the fetch when there is no user or window date yet, so we do not
-     * call "/api/users//reliability" before the URL has been read into the
-     * stores.
+     * call "/api/users//reliability".
      */
     enabled: userId.length > 0 && from.length > 0,
   });

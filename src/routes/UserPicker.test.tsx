@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
@@ -32,5 +33,20 @@ describe('UserPicker', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(/could not load users/i);
     });
+  });
+
+  it('opens the picked user, keeping the date and dropping the filters', async () => {
+    const user = userEvent.setup();
+    const { router } = renderWithProviders(<UserPicker />, {
+      path: '*',
+      initialEntries: ['/users/user_2002?from=2026-02-20&sign=inflow'],
+    });
+
+    await user.selectOptions(await screen.findByRole('combobox'), 'user_1001');
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/users/user_1001');
+    });
+    expect(router.state.location.search).toBe('?from=2026-02-20');
   });
 });
