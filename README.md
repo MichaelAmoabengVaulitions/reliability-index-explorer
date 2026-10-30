@@ -100,9 +100,8 @@ the one feature that uses them, while the code that talks to the backend
 stays in `src/data`. That backend code is kept together even when only one
 screen uses a given piece today, because its job is looking after backend
 data, not drawing one screen. The live updates connection is the clearest
-example: only the transaction explorer switches it on, but it keeps the
-shared transaction data fresh for the cashflow chart as well, so it belongs
-with the data rather than inside one feature.
+example: the dashboard switches it on, and it keeps the shared transaction
+data fresh for both the transaction explorer and the cashflow chart.
 
 ## How data flows through the app
 
@@ -183,9 +182,8 @@ request fails, and an empty state if there is genuinely nothing to show.
 There are 214 tests. They run with `yarn test`.
 
 For the helper functions (the API client, the date and money and scoring
-helpers, the functions that prepare the data, the code that updates the
-stores) the test was written before the function, watched fail, and then made
-to pass. These are the parts where a quiet mistake would be hardest to notice
+helpers, the functions that prepare the data) the test was written before the
+function, watched fail, and then made to pass. These are the parts where a quiet mistake would be hardest to notice
 later, so they have close coverage.
 
 For the React components the bar is lighter: each one has a test that draws
@@ -207,135 +205,28 @@ depend on the real backend being up.
 
 ## Seeing live updates
 
-The dashboard shows live transaction updates as they arrive. The hosted
-backend's streaming service is not available: its live updates endpoint
-returns an `HTTP 503` error after roughly 30 seconds instead of an event
-stream (see "Tradeoffs and limitations" below for the full detail). So the
-project includes a small local backend that streams properly. It stands in
-for the whole backend and sends live events in the exact format the API
-specification documents.
+Live events are served from their own host, not the REST API. The discovery
+response gives its address as `sse.base_url`, and the app connects there.
 
-This needs **two terminals**, both running at the same time: one for the
-local backend, one for the app. Open a second terminal tab or window before
-you start.
+The hosted stream sends a short scripted set of events dated today, then ends
+after about 30 seconds. The browser reconnects and the same events are sent
+again. The app recognises them by their ids and ignores the repeats, so you
+will see the rows change once. Events dated outside the scoring window are
+ignored, so with an older `from` date nothing changes.
 
-**Terminal 1: start the local backend.**
-
-```bash
-yarn mock
-```
-
-Wait for it to print `Mock backend running at http://localhost:3001`, then
-leave this terminal running. This is the backend, not a web page, so there is
-nothing to open in a browser from here.
-
-**Terminal 2 (a separate terminal): start the app.**
-
-```bash
-yarn dev:mock
-```
-
-This starts the app and points it at the local backend from Terminal 1. It
-prints an address, usually `http://localhost:5173` (or the next free port,
-such as `5174`, if 5173 is already taken). Open that printed address in a
-browser.
-
-Then pick a user from the sidebar. The dashboard updates on its own as events
-arrive. Here is where to look:
+Pick a user from the sidebar and look at:
 
 - **The Live badge**, at the top right of the Transactions card. A green dot
   and the word "Live" mean the stream is connected.
-- **The transaction table**. Every few seconds a row is added, changed or
-  removed. Added transactions are dated across the scoring window, so they
-  slot into the date-sorted list rather than all landing at the top.
+- **The transaction table**. Rows are added, changed or removed.
 - **The count line below the table**. It reads "Showing X of Y transactions",
-  followed by a "live updates" counter that rises by one for every event,
-  whether it added, changed or removed a row.
-- **The Monthly Cashflow chart**. Live transactions land in different months
-  across the window, so the inflow, outflow and net values of several bars
-  re-sum as events arrive.
+  followed by a "live updates" counter.
+- **The Monthly Cashflow chart**. It re-sums the months the events land in.
 
-By default the local backend streams events continuously, so leave it running
-as long as you want to watch. To stop, press Ctrl+C in each terminal.
-
-### Pushing it harder
-
-`yarn mock` takes three optional settings, useful for seeing how far the app
-holds up with a long transaction list and a fast stream of updates. The
-command below loads a large dataset and streams events fast and continuously:
-
-```bash
-MOCK_TX_COUNT=50000 MOCK_EVENT_INTERVAL_MS=20 yarn mock
-```
-
-- `MOCK_TX_COUNT`: transactions served per user (default 60).
-- `MOCK_EVENT_INTERVAL_MS`: milliseconds between live events (default 3000;
-  set it low for a fast stream).
-- `MOCK_EVENT_TOTAL`: how many live events to send per connection. Leave it
-  unset for a continuous stream (the default); set a number to stop after a
-  fixed count, for example `MOCK_EVENT_TOTAL=500`.
-
-The backend prints the active settings when it starts.
-
-### Verified at scale
-
-The live updates feature has been run against the local backend with **50,000
-transactions** loaded and a live event stream running the whole time. The
-virtualised list, the filters, the cashflow chart and the count line all
-stayed responsive.
-
-To repeat the check:
-
-1. Start the local backend with a large dataset and a steady stream of events:
-
-   ```bash
-   MOCK_TX_COUNT=50000 MOCK_EVENT_INTERVAL_MS=200 yarn mock
-   ```
-
-2. In the second terminal, start the app with `yarn dev:mock`, then open the
-   address it prints.
-3. Pick a user. The 50,000 transactions load one page at a time, and the
-   list appears once they have all arrived.
-4. While live events keep arriving, confirm that:
-   - scrolling the transaction list stays smooth.(NOTE: IT WILL BE BETTER GO REPLACE THE PAGINATION WITH A CURSOR PAGINATION . THIS KEEPS THE SCROLLING CONSISTENT WHEN ITEMS ARE INSERTED OR REMOVED WHILE SCROLLING )
-   - changing the sort, typing in the search box and toggling category
-     filters all stay responsive;
-   - the total in the count line keeps moving, and the "live updates" counter
-     beside it keeps rising as events arrive.
-
-### Will it work once the hosted backend is fixed?
-
-Yes. The local backend is not a different design: it sends events in the
-exact format the API specification (`docs/openapi.yaml`) documents, and the
-app's live updates client matches that format point for point.
-
-| The API specification says                                                                   | The app does                                                                                                                                                                               |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| The stream is `GET /api/users/{userId}/transaction-events`, with only a `userId` in the path | Opens the live connection on exactly that address, with no extra parameters                                                                                                                |
-| Events are named `TRANSACTION_ADDED`, `TRANSACTION_UPDATED` and `TRANSACTION_DELETED`        | Listens for exactly those three event names                                                                                                                                                |
-| Each event's `data` is JSON shaped like `{"type":...,"transaction":{...}}`                   | Reads `data` as JSON and checks it against the same Zod description the rest of the app uses before applying it                                                                            |
-| Each event carries an `id`, so a client can resume the stream after a drop                   | The browser tracks the `id` and reconnects on its own after any drop, showing a "connecting" badge while it retries; re-applying a repeated event changes nothing, so reconnecting is safe |
-
-So when the hosted stream is fixed, the app needs no change: point it back at
-the hosted backend (the default when you run `yarn dev`) and the same client
-handles the real stream.
+The score is fetched again a couple of seconds after the last update.
 
 ## Tradeoffs and limitations
 
-- **The hosted backend does not deliver live updates.** The live updates
-  address (`GET /api/users/:userId/transaction-events`) is served through AWS
-  API Gateway, which cannot hold open the long-lived connection a Server-Sent
-  Events stream needs. The request returns nothing for about 30 seconds (API
-  Gateway's request timeout), then fails with `HTTP 503` and the JSON body
-  `{"message":"Service Unavailable"}`, instead of the `text/event-stream`
-  response a real stream would send. (An `apigw-requestid` response header
-  confirms API Gateway is the layer timing the request out.) The feature is
-  built and tested, and the project ships a small local backend (see "Seeing
-  live updates" above) that sends events in the exact format the API
-  specification documents; the feature was checked end to end against it.
-  Because that local backend follows the documented format, the same client
-  code will work against the hosted backend once its streaming endpoint is
-  fixed.
 - **The transaction list loads every page up front and scrolls as one
   continuous view.** The brief asks for pagination or virtualization; this app
   uses virtualization, so there are no page-by-page controls. The list draws
@@ -344,6 +235,8 @@ handles the real stream.
   runs over the full set the app already holds. For very large histories this
   would move the filtering to the backend, returning pages as needed; see the
   Scalability note below.
+- **Cursor pagination would suit live updates better.** It keeps scrolling
+  consistent when items are inserted or removed while scrolling.
 - **Merchant category names cover only the codes seen in the data.** An
   unrecognised code shows the raw number rather than a guessed name, on
   purpose, so the tool never invents a label.
@@ -435,8 +328,8 @@ be worked out by the backend rather than summed on the frontend. The frontend
 structure would not change much, because fetching is already kept separate
 from display.
 
-For very frequent updates, the live updates would be collected and applied in
-small batches a few times a second, rather than redrawing once per update.
+Live updates are already collected and applied in small batches a few times a
+second, rather than redrawing once per update.
 
 ### Real time updates
 
