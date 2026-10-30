@@ -3,8 +3,8 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { API_BASE_URL } from '@/api/client';
 import { config } from '@/config';
+import { STREAM_BASE_URL } from '@/test-utils/fakeBackend';
 import { buildTransaction } from '@/test-utils/fixtures/transactions';
 
 import type { TransactionsQueryData } from './queries';
@@ -54,6 +54,14 @@ class MockEventSource {
     for (const fn of this.listeners.get(type) ?? []) fn(event);
   }
 
+  // The hosted stream ends after its scripted events, and the browser reconnects by itself.
+  endAndReconnect(): void {
+    this.readyState = MockEventSource.CONNECTING;
+    this.onerror?.();
+    this.readyState = MockEventSource.OPEN;
+    this.onopen?.();
+  }
+
   close(): void {
     this.closed = true;
     this.readyState = MockEventSource.CLOSED;
@@ -63,7 +71,6 @@ class MockEventSource {
 const USER_ID = 'user_1001';
 const FROM = '2025-09-01';
 const TO = '2026-02-20';
-const STREAM_BASE_URL = 'https://stream.example.com/';
 
 function buildWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
@@ -112,8 +119,48 @@ describe('useTransactionEventStream', () => {
       wrapper: buildWrapper(queryClient),
     });
     expect(MockEventSource.last?.url).toBe(
-      `https://stream.example.com/api/users/${USER_ID}/transaction-events`,
+      `${STREAM_BASE_URL}api/users/${USER_ID}/transaction-events`,
     );
+  });
+
+  it('runs the hosted stream through: events, stream ends, reconnect, same events again', async () => {
+    const queryClient = createClient();
+    seedTransactionsCache(
+      queryClient,
+      toState([buildTransaction({ id: 'tx_1' }), buildTransaction({ id: 'tx_2' })]),
+    );
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+
+    const scriptedEvents = [
+      { type: 'TRANSACTION_ADDED', transaction: buildTransaction({ id: 'tx_3' }) },
+      { type: 'TRANSACTION_UPDATED', transaction: buildTransaction({ id: 'tx_1', amount: 50 }) },
+      { type: 'TRANSACTION_DELETED', transaction_id: 'tx_2' },
+    ];
+    function sendScriptedEvents() {
+      scriptedEvents.forEach((event, index) => {
+        MockEventSource.last?.emit(event.type, event, String(index + 1));
+      });
+    }
+
+    act(() => {
+      MockEventSource.last?.onopen?.();
+      sendScriptedEvents();
+    });
+    await waitFor(() => expect(result.current.eventCount).toBe(3));
+
+    act(() => {
+      MockEventSource.last?.endAndReconnect();
+      sendScriptedEvents();
+    });
+    await new Promise((resolve) => setTimeout(resolve, config.stream.batchMs * 2));
+
+    expect(result.current).toEqual({ status: 'open', eventCount: 3 });
+    const cached = readTransactionsCache(queryClient);
+    expect(cached?.state.allIds).toEqual(['tx_1', 'tx_3']);
+    expect(cached?.state.byId['tx_1']?.amount).toBe(50);
+    expect(cached?.liveEvents).toHaveLength(3);
   });
 
   it('waits for discovery before opening the stream', async () => {
@@ -123,7 +170,7 @@ describe('useTransactionEventStream', () => {
     expect(MockEventSource.last).toBeNull();
     await waitFor(() => {
       expect(MockEventSource.last?.url).toBe(
-        `${API_BASE_URL}/api/users/${USER_ID}/transaction-events`,
+        `${STREAM_BASE_URL}api/users/${USER_ID}/transaction-events`,
       );
     });
   });

@@ -1,9 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '@/api/client';
-import { server } from '@/test-utils/msw/server';
 import { createQueryWrapper } from '@/test-utils/queryWrapper';
 
 import { useReliability } from './useReliability';
@@ -22,10 +20,8 @@ describe('useReliability', () => {
   });
 
   it('surfaces an ApiError when the request fails', async () => {
-    server.use(
-      http.get('*/api/users/:userId/reliability', () =>
-        HttpResponse.json({ error: 'boom' }, { status: 500 }),
-      ),
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ error: 'boom' }, { status: 500 }),
     );
 
     const { result } = renderHook(() => useReliability('user_1001', '2026-02-20'), {
