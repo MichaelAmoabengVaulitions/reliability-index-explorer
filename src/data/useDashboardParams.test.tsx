@@ -30,10 +30,10 @@ describe('useDashboardParams', () => {
   it('reads the user, the date and the filters from the URL', () => {
     renderWithProviders(<Harness />, {
       ...USER_ROUTE,
-      initialEntries: ['/users/user_1001?from=2026-02-20&sign=outflow'],
+      initialEntries: ['/users/user_1001?from=2026-02-28&sign=outflow'],
     });
     expect(screen.getByTestId('user')).toHaveTextContent('user_1001');
-    expect(screen.getByTestId('from')).toHaveTextContent('2026-02-20');
+    expect(screen.getByTestId('from')).toHaveTextContent('2026-02-28');
     expect(screen.getByTestId('sign')).toHaveTextContent('outflow');
   });
 
@@ -47,7 +47,7 @@ describe('useDashboardParams', () => {
     const user = userEvent.setup();
     const { router } = renderWithProviders(<Harness />, {
       ...USER_ROUTE,
-      initialEntries: ['/users/user_1001?from=2026-02-20&search=Amazon'],
+      initialEntries: ['/users/user_1001?from=2026-02-28&search=Amazon'],
     });
 
     await user.click(screen.getByRole('button', { name: 'Money in' }));
@@ -56,7 +56,7 @@ describe('useDashboardParams', () => {
       expect(screen.getByTestId('sign')).toHaveTextContent('inflow');
     });
     const params = new URLSearchParams(router.state.location.search);
-    expect(params.get('from')).toBe('2026-02-20');
+    expect(params.get('from')).toBe('2026-02-28');
     expect(params.get('search')).toBe('Amazon');
     expect(router.state.location.pathname).toBe('/users/user_1001');
   });
@@ -65,13 +65,13 @@ describe('useDashboardParams', () => {
     const user = userEvent.setup();
     const { router } = renderWithProviders(<Harness />, {
       ...USER_ROUTE,
-      initialEntries: ['/users/user_1001?from=2026-02-20&sign=outflow&search=Amazon'],
+      initialEntries: ['/users/user_1001?from=2026-02-28&sign=outflow&search=Amazon'],
     });
 
     await user.click(screen.getByRole('button', { name: 'Reset' }));
 
     await waitFor(() => {
-      expect(router.state.location.search).toBe('?from=2026-02-20');
+      expect(router.state.location.search).toBe('?from=2026-02-28');
     });
   });
 

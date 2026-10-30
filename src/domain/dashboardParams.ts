@@ -1,3 +1,5 @@
+import { config } from '@/config';
+
 import { isIsoDate, todayAsIsoDate } from './dates';
 
 export type TransactionSign = 'all' | 'inflow' | 'outflow';
@@ -57,10 +59,21 @@ function setOrRemove(params: URLSearchParams, name: string, value: string): void
   }
 }
 
-// The end of the scoring window. Today is used when the URL has no valid date.
+export function isSelectableDate(date: string): boolean {
+  return isIsoDate(date) && date >= config.api.earliestScoringDate && date <= todayAsIsoDate();
+}
+
+// The end of the scoring window. Today is used when the URL has no usable date.
 export function readFrom(params: URLSearchParams): string {
   const from = params.get('from') ?? '';
-  return isIsoDate(from) ? from : todayAsIsoDate();
+  return isSelectableDate(from) ? from : todayAsIsoDate();
+}
+
+// An empty date takes it out of the URL, which goes back to today.
+export function writeFrom(params: URLSearchParams, from: string): URLSearchParams {
+  const nextParams = new URLSearchParams(params);
+  setOrRemove(nextParams, 'from', from);
+  return nextParams;
 }
 
 // Anyone can type a URL, so a value we don't recognise falls back to its default.

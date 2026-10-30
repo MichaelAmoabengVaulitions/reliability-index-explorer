@@ -6,6 +6,7 @@ import {
   readFilters,
   readFrom,
   writeFilters,
+  writeFrom,
   type TransactionFilters,
 } from '@/domain/dashboardParams';
 
@@ -13,6 +14,7 @@ interface DashboardParams {
   /** Empty when no user has been picked yet. */
   userId: string;
   from: string;
+  updateFrom: (from: string) => void;
   filters: TransactionFilters;
   updateFilters: (changes: Partial<TransactionFilters>) => void;
   resetFilters: () => void;
@@ -23,7 +25,8 @@ interface DashboardParams {
  * and the date, filters and sort from the query string.
  *
  * Filter changes replace the current history entry, so the back button goes
- * to the previous page rather than undoing filters one at a time.
+ * to the previous page rather than undoing filters one at a time. A new date
+ * is a different view of the data, so it gets its own back button step.
  */
 export function useDashboardParams(): DashboardParams {
   const { userId = '' } = useParams<{ userId: string }>();
@@ -43,7 +46,14 @@ export function useDashboardParams(): DashboardParams {
     [setSearchParams],
   );
 
+  const updateFrom = useCallback(
+    (nextFrom: string) => {
+      void setSearchParams((currentParams) => writeFrom(currentParams, nextFrom));
+    },
+    [setSearchParams],
+  );
+
   const resetFilters = useCallback(() => updateFilters(DEFAULT_FILTERS), [updateFilters]);
 
-  return { userId, from, filters, updateFilters, resetFilters };
+  return { userId, from, updateFrom, filters, updateFilters, resetFilters };
 }

@@ -47,7 +47,7 @@ describe('Explorer', () => {
     const user = userEvent.setup();
     const { router } = renderWithProviders(<Explorer stream={IDLE_STREAM} />, {
       ...SAMPLE_DASHBOARD_ROUTE,
-      initialEntries: ['/users/user_1001?from=2026-02-20&search=no-such-merchant'],
+      initialEntries: ['/users/user_1001?from=2026-02-28&search=no-such-merchant'],
     });
 
     const clearButton = await screen.findByRole(
@@ -58,7 +58,7 @@ describe('Explorer', () => {
     await user.click(clearButton);
 
     await waitFor(() => {
-      expect(router.state.location.search).toBe('?from=2026-02-20');
+      expect(router.state.location.search).toBe('?from=2026-02-28');
     });
     expect(await screen.findByText(/Showing/)).toBeInTheDocument();
   });

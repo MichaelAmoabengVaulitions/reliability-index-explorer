@@ -33,7 +33,7 @@ describe('UserPicker', () => {
     const user = userEvent.setup();
     const { router } = renderWithProviders(<UserPicker />, {
       path: '*',
-      initialEntries: ['/users/user_2002?from=2026-02-20&sign=inflow'],
+      initialEntries: ['/users/user_2002?from=2026-02-28&sign=inflow'],
     });
 
     await user.selectOptions(await screen.findByRole('combobox'), 'user_1001');
@@ -41,6 +41,6 @@ describe('UserPicker', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/users/user_1001');
     });
-    expect(router.state.location.search).toBe('?from=2026-02-20');
+    expect(router.state.location.search).toBe('?from=2026-02-28');
   });
 });
