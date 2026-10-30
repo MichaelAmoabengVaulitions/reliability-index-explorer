@@ -1,6 +1,11 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import { fetchAllTransactions, fetchDiscovery, fetchReliability } from '@/api/client';
+import {
+  fetchAllTransactions,
+  fetchDiscovery,
+  fetchMerchantCategories,
+  fetchReliability,
+} from '@/api/client';
 
 import { queryKeys } from './queryKeys';
 import {
@@ -27,6 +32,12 @@ export interface TransactionsQueryData {
 export const discoveryQuery = queryOptions({
   queryKey: queryKeys.discovery,
   queryFn: fetchDiscovery,
+  staleTime: Infinity,
+});
+
+export const merchantCategoriesQuery = queryOptions({
+  queryKey: queryKeys.merchantCategories,
+  queryFn: fetchMerchantCategories,
   staleTime: Infinity,
 });
 

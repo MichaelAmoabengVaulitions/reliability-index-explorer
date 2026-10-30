@@ -83,9 +83,16 @@ export const transactionEventSchema = z.looseObject({
   transaction_id: z.string().optional(),
 });
 
+export const merchantCategoriesResponseSchema = z.looseObject({
+  categories: z.array(z.looseObject({ code: z.string(), name: z.string(), group: z.string() })),
+});
+
 export type Transaction = z.infer<typeof transactionSchema>;
 export type ScoringMetrics = z.infer<typeof scoringMetricsSchema>;
 export type ReliabilityResponse = z.infer<typeof reliabilityResponseSchema>;
 export type OffsetPaginatedResponse = z.infer<typeof offsetPaginatedSchema>;
 export type TransactionEvent = z.infer<typeof transactionEventSchema>;
 export type DiscoveryResponse = z.infer<typeof discoveryResponseSchema>;
+export type MerchantCategory = z.infer<
+  typeof merchantCategoriesResponseSchema
+>['categories'][number];

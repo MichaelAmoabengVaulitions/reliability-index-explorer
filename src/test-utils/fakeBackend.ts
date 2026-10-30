@@ -5,6 +5,12 @@ export const STREAM_BASE_URL = 'https://stream.example.test/';
 
 const TRANSACTION_COUNT = 2000;
 
+const MERCHANT_CATEGORIES = [
+  { code: '5411', name: 'Grocery Stores', group: 'essential' },
+  { code: '4900', name: 'Utilities', group: 'essential' },
+  { code: '6011', name: 'ATM Withdrawals', group: 'cash' },
+];
+
 function reliabilityResponse(url: URL): Response {
   if (!url.searchParams.get('from')) {
     return Response.json({ error: 'from is required' }, { status: 400 });
@@ -43,6 +49,9 @@ export async function fakeBackend(input: RequestInfo | URL): Promise<Response> {
       available_users: ['user_1001', 'user_1002'],
       sse: { base_url: STREAM_BASE_URL },
     });
+  }
+  if (url.pathname.endsWith('/merchant-categories')) {
+    return Response.json({ categories: MERCHANT_CATEGORIES });
   }
   if (url.pathname.endsWith('/reliability')) return reliabilityResponse(url);
   if (url.pathname.endsWith('/transactions')) return transactionsResponse(url);

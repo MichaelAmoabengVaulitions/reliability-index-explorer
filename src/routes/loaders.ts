@@ -1,7 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 
-import { discoveryQuery, reliabilityQuery, transactionsQuery } from '@/data/queries';
+import {
+  discoveryQuery,
+  merchantCategoriesQuery,
+  reliabilityQuery,
+  transactionsQuery,
+} from '@/data/queries';
 import { readFrom } from '@/domain/dashboardParams';
 import { windowFor } from '@/domain/dates';
 
@@ -13,6 +18,7 @@ import { windowFor } from '@/domain/dates';
 export function rootLoader(queryClient: QueryClient) {
   return async () => {
     void queryClient.prefetchQuery(discoveryQuery);
+    void queryClient.prefetchQuery(merchantCategoriesQuery);
     return null;
   };
 }

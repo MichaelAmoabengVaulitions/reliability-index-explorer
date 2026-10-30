@@ -1,6 +1,6 @@
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { config } from '@/config';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';
@@ -67,6 +67,29 @@ describe('Filters', () => {
     await waitFor(() => {
       expect(urlParam(router.state.location.search, 'categories')).toBeNull();
     });
+  });
+
+  it("shows the backend's category names, and the raw code when it has no name", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Filters availableCategoryCodes={['6011', '9999']} />);
+
+    await user.click(screen.getByText('Categories'));
+
+    expect(await screen.findByText('ATM Withdrawals')).toBeInTheDocument();
+    expect(screen.getAllByText('9999')).toHaveLength(2);
+  });
+
+  it('shows raw codes when the category names fail to load', async () => {
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ error: 'boom' }, { status: 500 }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<Filters availableCategoryCodes={['6011']} />);
+
+    await user.click(screen.getByText('Categories'));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(screen.getAllByText('6011')).toHaveLength(2);
   });
 
   it('puts the sort choice into the URL', async () => {

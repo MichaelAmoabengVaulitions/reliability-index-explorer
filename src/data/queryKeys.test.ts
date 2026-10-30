@@ -11,6 +11,10 @@ describe('queryKeys', () => {
     expect(queryKeys.discovery).toEqual(['reliability', 'discovery']);
   });
 
+  it('has a key for the merchant categories', () => {
+    expect(queryKeys.merchantCategories).toEqual(['reliability', 'merchant-categories']);
+  });
+
   it('builds a reliability key from the user id and the window start date', () => {
     expect(queryKeys.reliability('user_1001', '2026-02-20')).toEqual([
       'reliability',
