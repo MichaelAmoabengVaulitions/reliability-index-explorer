@@ -137,9 +137,7 @@ describe('fetchAvailableUserIds', () => {
 
   it('also accepts a userIds array, since the spec does not pin the shape', async () => {
     server.use(
-      http.get(`${config.api.baseUrl}/`, () =>
-        HttpResponse.json({ userIds: ['user_2001'] }),
-      ),
+      http.get(`${config.api.baseUrl}/`, () => HttpResponse.json({ userIds: ['user_2001'] })),
     );
     expect(await fetchAvailableUserIds()).toEqual(['user_2001']);
   });

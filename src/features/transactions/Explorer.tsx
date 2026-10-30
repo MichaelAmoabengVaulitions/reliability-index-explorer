@@ -1,10 +1,7 @@
 import { useMemo } from 'react';
 
 import { fromState } from '@/data/transactionState';
-import {
-  type StreamStatus,
-  useTransactionEventStream,
-} from '@/data/useTransactionEventStream';
+import { type StreamStatus, useTransactionEventStream } from '@/data/useTransactionEventStream';
 import { useTransactions } from '@/data/useTransactions';
 import { windowFor } from '@/domain/dates';
 import { useFilters } from '@/store/filters';
@@ -26,10 +23,7 @@ const LOADING_ROW_COUNT = 8;
  * also has a short label, so colour-blind users and screen-reader users get
  * the same information.
  */
-const STREAM_BADGE_BY_STATUS: Record<
-  StreamStatus,
-  { dot: string; text: string; label: string }
-> = {
+const STREAM_BADGE_BY_STATUS: Record<StreamStatus, { dot: string; text: string; label: string }> = {
   idle: { dot: 'bg-slate-300', text: 'text-slate-500', label: 'Live updates idle' },
   connecting: {
     dot: 'bg-amber-400 animate-pulse',
@@ -66,11 +60,7 @@ export function Explorer() {
   const fromDate = useSelectedUser((state) => state.from);
   const scoringWindow = windowFor(fromDate);
   const transactions = useTransactions(userId, scoringWindow.start, scoringWindow.end);
-  const stream = useTransactionEventStream(
-    userId,
-    scoringWindow.start,
-    scoringWindow.end,
-  );
+  const stream = useTransactionEventStream(userId, scoringWindow.start, scoringWindow.end);
   const filters = useFilters();
 
   const allTransactions = useMemo(() => {

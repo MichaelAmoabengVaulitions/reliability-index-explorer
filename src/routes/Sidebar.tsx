@@ -19,9 +19,7 @@ export function Sidebar() {
       </div>
 
       <div className="mb-6 px-2">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-sidebar-muted">
-          User
-        </p>
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-sidebar-muted">User</p>
         <UserPicker />
       </div>
 

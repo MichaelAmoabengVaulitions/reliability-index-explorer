@@ -25,7 +25,9 @@ describe('Breakdown', () => {
       expect(screen.getByRole('heading', { name: 'Income Regularity' })).toBeInTheDocument();
     });
     expect(screen.getByRole('heading', { name: 'Income Coverage Ratio' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Essential Payments Consistency' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Essential Payments Consistency' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Resilience Adjustments' })).toBeInTheDocument();
   });
 

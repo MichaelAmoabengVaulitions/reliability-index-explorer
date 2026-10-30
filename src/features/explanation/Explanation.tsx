@@ -34,9 +34,7 @@ function DriverRow({ driver }: DriverRowProps) {
     <li className="flex items-start justify-between gap-3 py-2">
       <div className="min-w-0">
         <p className="m-0 text-sm text-slate-700">{driver.label}</p>
-        {caption !== undefined && (
-          <p className="m-0 mt-0.5 text-xs text-slate-500">{caption}</p>
-        )}
+        {caption !== undefined && <p className="m-0 mt-0.5 text-xs text-slate-500">{caption}</p>}
       </div>
       {showsPoints && (
         <span

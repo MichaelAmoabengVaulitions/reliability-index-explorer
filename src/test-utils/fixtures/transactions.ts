@@ -57,12 +57,48 @@ interface MerchantTemplate {
 }
 
 const MERCHANT_TEMPLATES: readonly MerchantTemplate[] = [
-  { category: '5411', name: 'Whole Foods Market', description: 'Grocery purchase', minAmount: -80, maxAmount: -20 },
-  { category: '5411', name: 'Trader Joes', description: 'Grocery purchase', minAmount: -80, maxAmount: -20 },
-  { category: '4900', name: 'City Electric Co', description: 'Monthly utility', minAmount: -150, maxAmount: -50 },
-  { category: '4900', name: 'Telecom Provider', description: 'Internet bill', minAmount: -150, maxAmount: -50 },
-  { category: '5814', name: 'Cafe Central', description: 'Coffee purchase', minAmount: -15, maxAmount: -5 },
-  { category: '5732', name: 'Electronics Store', description: 'Misc purchase', minAmount: -500, maxAmount: -50 },
+  {
+    category: '5411',
+    name: 'Whole Foods Market',
+    description: 'Grocery purchase',
+    minAmount: -80,
+    maxAmount: -20,
+  },
+  {
+    category: '5411',
+    name: 'Trader Joes',
+    description: 'Grocery purchase',
+    minAmount: -80,
+    maxAmount: -20,
+  },
+  {
+    category: '4900',
+    name: 'City Electric Co',
+    description: 'Monthly utility',
+    minAmount: -150,
+    maxAmount: -50,
+  },
+  {
+    category: '4900',
+    name: 'Telecom Provider',
+    description: 'Internet bill',
+    minAmount: -150,
+    maxAmount: -50,
+  },
+  {
+    category: '5814',
+    name: 'Cafe Central',
+    description: 'Coffee purchase',
+    minAmount: -15,
+    maxAmount: -5,
+  },
+  {
+    category: '5732',
+    name: 'Electronics Store',
+    description: 'Misc purchase',
+    minAmount: -500,
+    maxAmount: -50,
+  },
 ];
 
 /*

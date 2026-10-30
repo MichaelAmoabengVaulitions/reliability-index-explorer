@@ -12,10 +12,9 @@ const window = { userId: 'user_1001', from: '2025-09-01', to: '2026-02-20' };
 
 describe('useTransactions', () => {
   it('returns the transactions once every page has been loaded', async () => {
-    const { result } = renderHook(
-      () => useTransactions(window.userId, window.from, window.to),
-      { wrapper: createQueryWrapper() },
-    );
+    const { result } = renderHook(() => useTransactions(window.userId, window.from, window.to), {
+      wrapper: createQueryWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -26,10 +25,9 @@ describe('useTransactions', () => {
   });
 
   it('gives the total count from the very first page, so a "loaded N of M" line can show before all pages are in', async () => {
-    const { result } = renderHook(
-      () => useTransactions(window.userId, window.from, window.to),
-      { wrapper: createQueryWrapper() },
-    );
+    const { result } = renderHook(() => useTransactions(window.userId, window.from, window.to), {
+      wrapper: createQueryWrapper(),
+    });
 
     // Wait for at least one page to arrive (loaded > 0); the total should already be the final number.
     await waitFor(() => {
@@ -40,10 +38,9 @@ describe('useTransactions', () => {
 
   it('keeps live stream events when the transactions are fetched again', async () => {
     const { queryClient, wrapper } = createQueryClientAndWrapper();
-    const { result } = renderHook(
-      () => useTransactions(window.userId, window.from, window.to),
-      { wrapper },
-    );
+    const { result } = renderHook(() => useTransactions(window.userId, window.from, window.to), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 

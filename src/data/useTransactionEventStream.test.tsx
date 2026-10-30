@@ -67,10 +67,7 @@ function buildWrapper(queryClient: QueryClient) {
   };
 }
 
-function seedTransactionsCache(
-  queryClient: QueryClient,
-  state: TransactionState,
-): void {
+function seedTransactionsCache(queryClient: QueryClient, state: TransactionState): void {
   queryClient.setQueryData<TransactionsQueryData>(queryKeys.transactions(USER_ID, FROM, TO), {
     state,
     liveEvents: [],
@@ -304,5 +301,4 @@ describe('useTransactionEventStream', () => {
     rerender({ userId: 'user_1002' });
     expect(result.current.eventCount).toBe(0);
   });
-
 });

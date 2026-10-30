@@ -8,9 +8,7 @@ import { Root } from './Root';
 describe('Root', () => {
   it('shows the "pick a user" message in the header when no user is selected', () => {
     renderWithProviders(<Root />);
-    expect(
-      screen.getByRole('heading', { name: /pick a user to begin/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /pick a user to begin/i })).toBeInTheDocument();
   });
 
   it('shows the welcome instructions in the main area when no user is selected', () => {
