@@ -18,8 +18,16 @@ describe('Root', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows the scoring window date from the URL', () => {
-    renderWithProviders(<Root />, { initialEntries: ['/?from=2026-02-20'] });
-    expect(screen.getByText(/scoring window ends 2026-02-20/i)).toBeInTheDocument();
+  it('shows the date picker once a user is picked', () => {
+    renderWithProviders(<Root />, {
+      path: '/users/:userId',
+      initialEntries: ['/users/user_1001?from=2026-02-28'],
+    });
+    expect(screen.getByLabelText(/scoring window ends/i)).toHaveValue('2026-02-28');
+  });
+
+  it('hides the date picker until a user is picked', () => {
+    renderWithProviders(<Root />);
+    expect(screen.queryByLabelText(/scoring window ends/i)).not.toBeInTheDocument();
   });
 });

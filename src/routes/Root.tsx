@@ -2,6 +2,7 @@ import { Outlet } from 'react-router';
 
 import { useDashboardParams } from '@/data/useDashboardParams';
 
+import { ScoringDatePicker } from './ScoringDatePicker';
 import { Sidebar } from './Sidebar';
 import { UserPicker } from './UserPicker';
 
@@ -13,7 +14,7 @@ import { UserPicker } from './UserPicker';
  * scoring window, then the per-page content underneath.
  */
 export function Root() {
-  const { userId, from } = useDashboardParams();
+  const { userId } = useDashboardParams();
   const hasUser = userId.length > 0;
 
   return (
@@ -25,8 +26,8 @@ export function Root() {
             <h1 className="m-0 text-lg font-semibold text-slate-900">
               {hasUser ? userId : 'Pick a user to begin'}
             </h1>
-            <p className="m-0 text-xs text-slate-500">Scoring window ends {from}</p>
           </div>
+          {hasUser && <ScoringDatePicker />}
           {/* Mobile fallback so the picker is reachable on narrow screens where the sidebar is hidden. */}
           <div className="md:hidden">
             <UserPicker />

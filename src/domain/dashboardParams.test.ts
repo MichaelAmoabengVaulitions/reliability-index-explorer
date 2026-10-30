@@ -2,10 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   DEFAULT_FILTERS,
+  isSelectableDate,
   paramsForNewUser,
   readFilters,
   readFrom,
   writeFilters,
+  writeFrom,
 } from './dashboardParams';
 
 function paramsFrom(queryString: string): URLSearchParams {
@@ -23,7 +25,7 @@ describe('readFrom', () => {
   });
 
   it('reads a valid date from the URL', () => {
-    expect(readFrom(paramsFrom('from=2026-02-20'))).toBe('2026-02-20');
+    expect(readFrom(paramsFrom('from=2026-02-28'))).toBe('2026-02-28');
   });
 
   it("uses today's date when the URL has no date", () => {
@@ -36,6 +38,52 @@ describe('readFrom', () => {
 
   it("uses today's date when the URL has a date that does not exist", () => {
     expect(readFrom(paramsFrom('from=2026-02-31'))).toBe('2026-05-19');
+  });
+
+  it("uses today's date when the URL date is before the earliest full window", () => {
+    expect(readFrom(paramsFrom('from=2026-02-27'))).toBe('2026-05-19');
+  });
+
+  it("uses today's date when the URL date is in the future", () => {
+    expect(readFrom(paramsFrom('from=2026-05-20'))).toBe('2026-05-19');
+  });
+});
+
+describe('isSelectableDate', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-19T14:30:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('accepts the first and last dates in the range', () => {
+    expect(isSelectableDate('2026-02-28')).toBe(true);
+    expect(isSelectableDate('2026-05-19')).toBe(true);
+  });
+
+  it('rejects dates just outside the range', () => {
+    expect(isSelectableDate('2026-02-27')).toBe(false);
+    expect(isSelectableDate('2026-05-20')).toBe(false);
+  });
+
+  it('rejects text that is not a date', () => {
+    expect(isSelectableDate('')).toBe(false);
+    expect(isSelectableDate('not-a-date')).toBe(false);
+  });
+});
+
+describe('writeFrom', () => {
+  it('sets the date and keeps the filters', () => {
+    expect(writeFrom(paramsFrom('sign=inflow'), '2026-03-31').toString()).toBe(
+      'sign=inflow&from=2026-03-31',
+    );
+  });
+
+  it('removes the date when it is empty', () => {
+    expect(writeFrom(paramsFrom('from=2026-03-31'), '').toString()).toBe('');
   });
 });
 
@@ -99,11 +147,11 @@ describe('writeFilters', () => {
   });
 
   it('keeps the date', () => {
-    const params = writeFilters(paramsFrom('from=2026-02-20'), {
+    const params = writeFilters(paramsFrom('from=2026-02-28'), {
       ...DEFAULT_FILTERS,
       sign: 'inflow',
     });
-    expect(params.get('from')).toBe('2026-02-20');
+    expect(params.get('from')).toBe('2026-02-28');
   });
 
   it('gives back what readFilters reads', () => {
@@ -119,8 +167,8 @@ describe('writeFilters', () => {
 
 describe('paramsForNewUser', () => {
   it('keeps the date and drops the filters', () => {
-    const params = paramsForNewUser(paramsFrom('from=2026-02-20&sign=inflow&search=Amazon'));
-    expect(params.toString()).toBe('from=2026-02-20');
+    const params = paramsForNewUser(paramsFrom('from=2026-02-28&sign=inflow&search=Amazon'));
+    expect(params.toString()).toBe('from=2026-02-28');
   });
 
   it('is empty when the URL has no date', () => {

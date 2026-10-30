@@ -18,7 +18,7 @@ interface RenderWithProvidersResult extends RenderResult {
 /** Opens a component on the dashboard URL for the sample user and date. */
 export const SAMPLE_DASHBOARD_ROUTE: RenderOptions = {
   path: '/users/:userId',
-  initialEntries: ['/users/user_1001?from=2026-02-20'],
+  initialEntries: ['/users/user_1001?from=2026-02-28'],
 };
 
 /**

@@ -9,6 +9,12 @@ export const config = {
     transactionPageLimit: 500,
     scoringWindowMonths: 6,
     /*
+     * The first month-end with six full months of data behind it. The data
+     * starts in September 2025, so an earlier date would score a part-empty
+     * window and look low only because months are missing.
+     */
+    earliestScoringDate: '2026-02-28',
+    /*
      * The only user id the API specification gives as an example. The user
      * picker falls back to this list when the discovery endpoint returns
      * nothing usable, so the dropdown is never empty.

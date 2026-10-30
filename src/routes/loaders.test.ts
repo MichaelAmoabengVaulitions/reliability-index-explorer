@@ -47,17 +47,17 @@ describe('dashboardLoader', () => {
   it('starts loading the score and transactions for the user and date in the URL', async () => {
     await dashboardLoader(queryClient)({
       params: { userId: 'user_1001' },
-      request: dashboardRequest('?from=2026-02-20'),
+      request: dashboardRequest('?from=2026-02-28'),
     });
 
     await waitFor(() => {
       expect(
-        queryClient.getQueryData(queryKeys.reliability('user_1001', '2026-02-20')),
+        queryClient.getQueryData(queryKeys.reliability('user_1001', '2026-02-28')),
       ).toBeDefined();
     });
     await waitFor(() => {
       expect(
-        queryClient.getQueryData(queryKeys.transactions('user_1001', '2025-09-01', '2026-02-20')),
+        queryClient.getQueryData(queryKeys.transactions('user_1001', '2025-09-01', '2026-02-28')),
       ).toBeDefined();
     });
   });
@@ -78,7 +78,7 @@ describe('dashboardLoader', () => {
   it('does not wait for the data, so the page can show its skeletons', async () => {
     await dashboardLoader(queryClient)({
       params: { userId: 'user_1001' },
-      request: dashboardRequest('?from=2026-02-20'),
+      request: dashboardRequest('?from=2026-02-28'),
     });
 
     expect(queryClient.isFetching()).toBeGreaterThan(0);
@@ -92,7 +92,7 @@ describe('dashboardLoader', () => {
     await expect(
       dashboardLoader(queryClient)({
         params: { userId: 'user_1001' },
-        request: dashboardRequest('?from=2026-02-20'),
+        request: dashboardRequest('?from=2026-02-28'),
       }),
     ).resolves.toBeNull();
   });
@@ -115,14 +115,14 @@ describe('shouldReloadDashboard', () => {
   }
 
   it('skips the reload when only the filters change', () => {
-    expect(reloadFor('/?from=2026-02-20', '/?from=2026-02-20&sign=inflow')).toBe(false);
+    expect(reloadFor('/?from=2026-02-28', '/?from=2026-02-28&sign=inflow')).toBe(false);
   });
 
   it('reloads when the date changes', () => {
-    expect(reloadFor('/?from=2026-02-20', '/?from=2026-01-20')).toBe(true);
+    expect(reloadFor('/?from=2026-02-28', '/?from=2026-01-20')).toBe(true);
   });
 
   it('reloads when the user changes', () => {
-    expect(reloadFor('/?from=2026-02-20', '/?from=2026-02-20', 'user_1002')).toBe(true);
+    expect(reloadFor('/?from=2026-02-28', '/?from=2026-02-28', 'user_1002')).toBe(true);
   });
 });

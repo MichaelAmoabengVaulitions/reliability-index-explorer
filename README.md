@@ -178,7 +178,7 @@ request fails, and an empty state if there is genuinely nothing to show.
 
 ## Testing
 
-There are 282 tests. They run with `yarn test`.
+There are 297 tests. They run with `yarn test`.
 
 For the helper functions (the API client, the date and money and scoring
 helpers, the functions that prepare the data) the test was written before the
@@ -238,6 +238,9 @@ The score is fetched again a couple of seconds after the last update.
   consistent when items are inserted or removed while scrolling.
 - **Merchant category names come from the backend.** A code the backend has
   no name for shows as the raw number, so the tool never invents a label.
+- **The scoring window has limits.** The date picker runs from 2026-02-28,
+  the first month-end with six full months of data, up to today. A date
+  outside that range in the URL falls back to today.
 - **Only Resilience Adjustments shows earned points.** The API gives points
   for the resilience lines but not for income regularity, income coverage or
   essential payments, so those cards show their value and range. The frontend
