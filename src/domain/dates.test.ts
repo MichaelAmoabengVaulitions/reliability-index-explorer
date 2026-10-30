@@ -1,6 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { formatMonth, monthKey, parseISODate, todayAsIsoDate, windowFor } from './dates';
+import { formatMonth, isIsoDate, monthKey, parseISODate, todayAsIsoDate, windowFor } from './dates';
+
+describe('isIsoDate', () => {
+  it('accepts a real YYYY-MM-DD date', () => {
+    expect(isIsoDate('2026-02-20')).toBe(true);
+  });
+
+  it('accepts 29 February in a leap year', () => {
+    expect(isIsoDate('2024-02-29')).toBe(true);
+  });
+
+  it('rejects text that is not a date', () => {
+    expect(isIsoDate('not-a-date')).toBe(false);
+    expect(isIsoDate('')).toBe(false);
+  });
+
+  it('rejects a date in the wrong format', () => {
+    expect(isIsoDate('20-02-2026')).toBe(false);
+    expect(isIsoDate('2026-2-20')).toBe(false);
+  });
+
+  it('rejects a month or day that does not exist', () => {
+    expect(isIsoDate('2026-13-01')).toBe(false);
+    expect(isIsoDate('2026-02-31')).toBe(false);
+    expect(isIsoDate('2026-02-29')).toBe(false);
+  });
+});
 
 describe('parseISODate', () => {
   it('parses a YYYY-MM-DD string as midnight UTC on that day', () => {
@@ -52,8 +78,7 @@ describe('todayAsIsoDate', () => {
   it('uses the UTC calendar day even when local time is on the previous day', () => {
     /*
      * At 2026-05-20 00:30 UTC it is still 2026-05-19 in time zones behind UTC,
-     * but the stores and the backend both use UTC, so we always return the
-     * UTC calendar day.
+     * but the backend uses UTC, so we always return the UTC calendar day.
      */
     vi.setSystemTime(new Date('2026-05-20T00:30:00.000Z'));
     expect(todayAsIsoDate()).toBe('2026-05-20');

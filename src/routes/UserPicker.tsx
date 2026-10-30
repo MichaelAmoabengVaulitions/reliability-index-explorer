@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { fetchAvailableUserIds } from '@/api/client';
+import { paramsForNewUser } from '@/domain/dashboardParams';
 
 const DISCOVERY_QUERY_KEY = ['discovery', 'userIds'] as const;
 
@@ -17,10 +18,18 @@ const DISCOVERY_QUERY_KEY = ['discovery', 'userIds'] as const;
 export function UserPicker() {
   const navigate = useNavigate();
   const { userId: currentUserId } = useParams<{ userId: string }>();
+  const [searchParams] = useSearchParams();
   const { data, isLoading, error } = useQuery({
     queryKey: DISCOVERY_QUERY_KEY,
     queryFn: fetchAvailableUserIds,
   });
+
+  function openUser(userId: string) {
+    void navigate({
+      pathname: `/users/${encodeURIComponent(userId)}`,
+      search: paramsForNewUser(searchParams).toString(),
+    });
+  }
 
   if (isLoading) {
     return <p className="px-3 text-sm text-sidebar-muted">Loading users…</p>;
@@ -39,7 +48,7 @@ export function UserPicker() {
       <span className="relative block">
         <select
           value={currentUserId ?? ''}
-          onChange={(event) => navigate(`/users/${event.target.value}`)}
+          onChange={(event) => openUser(event.target.value)}
           className="block w-full appearance-none rounded-md border border-sidebar-border bg-sidebar-hover px-3 py-2 pr-9 text-sm text-white shadow-sm focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
         >
           <option value="" disabled>

@@ -1,8 +1,8 @@
 import type { ReliabilityResponse } from '@/api/schemas';
 import { config } from '@/config';
+import { useDashboardParams } from '@/data/useDashboardParams';
 import { useReliability } from '@/data/useReliability';
 import { formatCoverageRatio, parseDriver } from '@/domain/scoring';
-import { useSelectedUser } from '@/store/selectedUser';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
@@ -81,8 +81,7 @@ function findSavingsDriver(response: ReliabilityResponse) {
  * out rather than guessed.
  */
 export function Breakdown() {
-  const userId = useSelectedUser((state) => state.userId);
-  const from = useSelectedUser((state) => state.from);
+  const { userId, from } = useDashboardParams();
   const reliability = useReliability(userId, from);
 
   if (reliability.isLoading) {

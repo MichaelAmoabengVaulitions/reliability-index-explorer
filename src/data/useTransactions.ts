@@ -53,8 +53,7 @@ export function useTransactions(
     queryKey,
     /*
      * Skip the fetch when there is no user or window date yet, so we do not
-     * call "/api/users//transactions" before the URL has been read into the
-     * stores.
+     * call "/api/users//transactions".
      */
     enabled: userId.length > 0 && from.length > 0 && to.length > 0,
     queryFn: async () => {

@@ -2,7 +2,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { createBrowserRouter } from 'react-router';
+import { RouterProvider } from 'react-router/dom';
 
 import { createQueryClient } from './data/queryClient.ts';
 import { Dashboard } from './routes/Dashboard.tsx';
@@ -16,17 +17,18 @@ import './index.css';
  */
 const rootElement = document.getElementById('root')!;
 const queryClient = createQueryClient();
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Root />,
+    children: [{ path: 'users/:userId', element: <Dashboard /> }],
+  },
+]);
 
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Root />}>
-            <Route path="users/:userId" element={<Dashboard />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <RouterProvider router={router} />
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   </StrictMode>,

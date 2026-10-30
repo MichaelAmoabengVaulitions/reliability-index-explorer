@@ -1,30 +1,20 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { useSelectedUser } from '@/store/selectedUser';
-import { renderWithProviders } from '@/test-utils/renderWithProviders';
+import { SAMPLE_DASHBOARD_ROUTE, renderWithProviders } from '@/test-utils/renderWithProviders';
 
 import { Explanation } from './Explanation';
 
-beforeEach(() => {
-  useSelectedUser.getState().setUserId('user_1001');
-  useSelectedUser.getState().setFrom('2026-02-20');
-});
-
-afterEach(() => {
-  useSelectedUser.getState().setUserId('');
-});
-
 describe('Explanation', () => {
   it('shows the medium-band lead-in for the fixture', async () => {
-    renderWithProviders(<Explanation />);
+    renderWithProviders(<Explanation />, SAMPLE_DASHBOARD_ROUTE);
     await waitFor(() => {
       expect(screen.getByText(/a middle-band score/i)).toBeInTheDocument();
     });
   });
 
   it('splits the fixture drivers into helping and hurting columns', async () => {
-    renderWithProviders(<Explanation />);
+    renderWithProviders(<Explanation />, SAMPLE_DASHBOARD_ROUTE);
     await waitFor(() => {
       expect(screen.getByText(/savings behavior detected/i)).toBeInTheDocument();
     });
@@ -37,7 +27,7 @@ describe('Explanation', () => {
   });
 
   it('puts drivers without a points value in the Notes section', async () => {
-    renderWithProviders(<Explanation />);
+    renderWithProviders(<Explanation />, SAMPLE_DASHBOARD_ROUTE);
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Notes' })).toBeInTheDocument();
     });

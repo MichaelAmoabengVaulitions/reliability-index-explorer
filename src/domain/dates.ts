@@ -52,9 +52,18 @@ function formatISODate(date: Date): string {
 }
 
 /*
- * Today's date as YYYY-MM-DD, in UTC. The backend and the stores both use
- * UTC, so the viewer's local time zone must not change the day here.
+ * Today's date as YYYY-MM-DD, in UTC. The backend uses UTC, so the viewer's
+ * local time zone must not change the day here.
  */
 export function todayAsIsoDate(): string {
   return formatISODate(new Date());
+}
+
+/*
+ * True for a real date written as YYYY-MM-DD. Formatting the parsed date and
+ * comparing it to the input catches both bad formats and days that don't
+ * exist, because 2026-02-31 comes back as a date in March.
+ */
+export function isIsoDate(value: string): boolean {
+  return formatISODate(parseISODate(value)) === value;
 }

@@ -12,10 +12,10 @@ import {
 } from 'recharts';
 
 import { fromState } from '@/data/transactionState';
+import { useDashboardParams } from '@/data/useDashboardParams';
 import { useTransactions } from '@/data/useTransactions';
 import { windowFor } from '@/domain/dates';
 import { formatMoney } from '@/domain/money';
-import { useSelectedUser } from '@/store/selectedUser';
 import { colors } from '@/theme';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
@@ -79,9 +79,8 @@ function CashflowTooltip({
  * chart has already drawn.
  */
 export function Cashflow() {
-  const userId = useSelectedUser((state) => state.userId);
-  const fromDate = useSelectedUser((state) => state.from);
-  const scoringWindow = windowFor(fromDate);
+  const { userId, from } = useDashboardParams();
+  const scoringWindow = windowFor(from);
   const transactions = useTransactions(userId, scoringWindow.start, scoringWindow.end);
 
   const series = useMemo(() => {

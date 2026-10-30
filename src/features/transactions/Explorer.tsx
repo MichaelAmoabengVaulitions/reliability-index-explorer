@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
 
 import { fromState } from '@/data/transactionState';
+import { useDashboardParams } from '@/data/useDashboardParams';
 import { type StreamStatus, useTransactionEventStream } from '@/data/useTransactionEventStream';
 import { useTransactions } from '@/data/useTransactions';
 import { windowFor } from '@/domain/dates';
-import { useFilters } from '@/store/filters';
-import { useSelectedUser } from '@/store/selectedUser';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { ErrorState } from '@/ui/ErrorState';
@@ -56,12 +55,10 @@ function LiveBadge({ status }: { status: StreamStatus }) {
  * the result.
  */
 export function Explorer() {
-  const userId = useSelectedUser((state) => state.userId);
-  const fromDate = useSelectedUser((state) => state.from);
-  const scoringWindow = windowFor(fromDate);
+  const { userId, from, filters, resetFilters } = useDashboardParams();
+  const scoringWindow = windowFor(from);
   const transactions = useTransactions(userId, scoringWindow.start, scoringWindow.end);
   const stream = useTransactionEventStream(userId, scoringWindow.start, scoringWindow.end);
-  const filters = useFilters();
 
   const allTransactions = useMemo(() => {
     if (transactions.data === undefined) return [];
@@ -131,7 +128,7 @@ export function Explorer() {
           action={
             <button
               type="button"
-              onClick={() => filters.reset()}
+              onClick={resetFilters}
               className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Clear filters

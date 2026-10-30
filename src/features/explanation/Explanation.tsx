@@ -1,7 +1,7 @@
 import type { ReliabilityResponse } from '@/api/schemas';
+import { useDashboardParams } from '@/data/useDashboardParams';
 import { useReliability } from '@/data/useReliability';
 import { type ParsedDriver, captionForDriver, parseDriver } from '@/domain/scoring';
-import { useSelectedUser } from '@/store/selectedUser';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
@@ -81,8 +81,7 @@ function Column({ title, drivers, emptyHint }: ColumnProps) {
  * opens with a sentence the analyst can read out loud.
  */
 export function Explanation() {
-  const userId = useSelectedUser((state) => state.userId);
-  const from = useSelectedUser((state) => state.from);
+  const { userId, from } = useDashboardParams();
   const reliability = useReliability(userId, from);
 
   if (reliability.isLoading) {

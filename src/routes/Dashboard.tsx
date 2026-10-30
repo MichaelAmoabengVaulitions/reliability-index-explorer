@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useParams } from 'react-router';
 
 import { Breakdown } from '@/features/breakdown/Breakdown';
@@ -6,15 +5,10 @@ import { Cashflow } from '@/features/cashflow/Cashflow';
 import { Explanation } from '@/features/explanation/Explanation';
 import { Overview } from '@/features/overview/Overview';
 import { Explorer } from '@/features/transactions/Explorer';
-import { useSelectedUser } from '@/store/selectedUser';
 import { ErrorBoundary } from '@/ui/ErrorBoundary';
 
 /**
  * Dashboard view for a single user.
- *
- * The user id comes from the URL (the :userId part in /users/:userId). We
- * copy it into the selected-user store so other code can read it from the
- * store, rather than each component having to ask the router.
  *
  * Each feature sits inside its own error catcher tied to the user id, so one
  * feature crashing leaves the rest of the dashboard working, and picking a
@@ -22,11 +16,6 @@ import { ErrorBoundary } from '@/ui/ErrorBoundary';
  */
 export function Dashboard() {
   const { userId } = useParams<{ userId: string }>();
-  const setUserId = useSelectedUser((state) => state.setUserId);
-
-  useEffect(() => {
-    if (userId !== undefined) setUserId(userId);
-  }, [userId, setUserId]);
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
