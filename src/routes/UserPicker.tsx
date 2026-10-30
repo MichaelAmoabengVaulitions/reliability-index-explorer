@@ -2,27 +2,18 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 
-import { fetchAvailableUserIds } from '@/api/client';
+import { discoveryQuery } from '@/data/queries';
 import { paramsForNewUser } from '@/domain/dashboardParams';
-
-const DISCOVERY_QUERY_KEY = ['discovery', 'userIds'] as const;
 
 /**
  * Dropdown that lists every user id the backend's discovery endpoint
  * reports. Picking one takes the visitor to that user's dashboard.
- *
- * The network call lives directly in this component because this is the
- * only place that needs it. It still goes through React Query so the
- * loading and error behaviour matches the rest of the app.
  */
 export function UserPicker() {
   const navigate = useNavigate();
   const { userId: currentUserId } = useParams<{ userId: string }>();
   const [searchParams] = useSearchParams();
-  const { data, isLoading, error } = useQuery({
-    queryKey: DISCOVERY_QUERY_KEY,
-    queryFn: fetchAvailableUserIds,
-  });
+  const { data, isLoading, error } = useQuery(discoveryQuery);
 
   function openUser(userId: string) {
     void navigate({

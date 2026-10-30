@@ -128,13 +128,14 @@ flowchart TD
 The journey of a score, step by step:
 
 1. The analyst picks a user. The user id goes into the address bar as part of
-   the path.
+   the path, and the route's loader starts fetching that user's data straight
+   away, without waiting for the page to draw.
 2. The app asks the backend for that user's score. The response passes through
    the Zod check, which confirms it has the expected fields, then React Query
    caches it.
 3. The app asks the backend for the transaction history. The backend returns
    the data one page at a time, so the app asks for each page in turn until
-   there are no more, and reports progress as it goes.
+   there are no more. The cards show their loading state until every page is in.
 4. The transactions are stored in a lookup table that finds each one by its
    id, which makes later updates quick and removes any duplicates.
 5. The address bar holds what the analyst has narrowed down to. The explorer
@@ -294,7 +295,7 @@ To repeat the check:
 2. In the second terminal, start the app with `yarn dev:mock`, then open the
    address it prints.
 3. Pick a user. The 50,000 transactions load one page at a time, and the
-   progress text counts up as they arrive.
+   list appears once they have all arrived.
 4. While live events keep arriving, confirm that:
    - scrolling the transaction list stays smooth.(NOTE: IT WILL BE BETTER GO REPLACE THE PAGINATION WITH A CURSOR PAGINATION . THIS KEEPS THE SCROLLING CONSISTENT WHEN ITEMS ARE INSERTED OR REMOVED WHILE SCROLLING )
    - changing the sort, typing in the search box and toggling category
@@ -418,9 +419,8 @@ the same update twice produces the same result as applying it once, so if the
 connection drops and the backend replays updates when it reconnects, nothing
 is double counted or scrambled.
 
-While transactions are still loading, the app reports how many of the total
-have arrived, so it is clear the data is still coming in rather than looking
-finished.
+While transactions are still loading, the cards show their loading state, so
+a partly loaded list never looks like the finished one.
 
 ### Scalability
 

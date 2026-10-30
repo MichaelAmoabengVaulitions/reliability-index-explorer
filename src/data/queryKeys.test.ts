@@ -7,6 +7,10 @@ describe('queryKeys', () => {
     expect(queryKeys.all).toEqual(['reliability']);
   });
 
+  it('has a key for the discovery response', () => {
+    expect(queryKeys.discovery).toEqual(['reliability', 'discovery']);
+  });
+
   it('builds a reliability key from the user id and the window start date', () => {
     expect(queryKeys.reliability('user_1001', '2026-02-20')).toEqual([
       'reliability',

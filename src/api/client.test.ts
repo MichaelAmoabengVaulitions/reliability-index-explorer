@@ -95,17 +95,6 @@ describe('fetchAllTransactions', () => {
     expect(new Set(all.map((tx) => tx.id)).size).toBe(2000);
   });
 
-  it('calls onProgress after every page with the running totals', async () => {
-    const calls: Array<[number, number]> = [];
-    await fetchAllTransactions({
-      ...window,
-      onProgress: (loaded, total) => calls.push([loaded, total]),
-    });
-    expect(calls).toHaveLength(4);
-    expect(calls[0]).toEqual([500, 2000]);
-    expect(calls[3]).toEqual([2000, 2000]);
-  });
-
   it('rejects when any page fails', async () => {
     server.use(
       http.get('*/api/users/:userId/transactions', () =>

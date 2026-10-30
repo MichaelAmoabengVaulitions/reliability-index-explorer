@@ -1,12 +1,10 @@
 import { z } from 'zod';
 
 /*
- * We check responses strictly on purpose: if a backend response gains or
- * loses a field, we want the app to say so loudly during development rather
- * than carry on with data that no longer matches. If the backend starts
- * adding fields often, switch these to the loose z.object instead.
+ * A missing or wrong field fails the check, but extra fields are allowed. The
+ * backend adding a field shouldn't stop the dashboard from loading.
  */
-export const transactionSchema = z.strictObject({
+export const transactionSchema = z.looseObject({
   id: z.string(),
   account_id: z.string(),
   user_id: z.string(),
@@ -20,7 +18,7 @@ export const transactionSchema = z.strictObject({
   synced_at: z.iso.datetime({ offset: true }),
 });
 
-export const scoringMetricsSchema = z.strictObject({
+export const scoringMetricsSchema = z.looseObject({
   income_regularity: z.number(),
   /*
    * This is null when the user has no essential expenses: with nothing to
@@ -34,7 +32,7 @@ export const scoringMetricsSchema = z.strictObject({
   late_fee_events: z.number().int(),
 });
 
-export const reliabilityResponseSchema = z.strictObject({
+export const reliabilityResponseSchema = z.looseObject({
   user_id: z.string(),
   from: z.iso.date(),
   currency: z.string(),
@@ -49,7 +47,7 @@ export const reliabilityResponseSchema = z.strictObject({
  * optional because the real server does not always include it; we go by
  * has_more instead, so a missing total_pages does not break anything.
  */
-export const offsetPaginatedSchema = z.strictObject({
+export const offsetPaginatedSchema = z.looseObject({
   transactions: z.array(transactionSchema),
   total: z.number().int(),
   page: z.number().int(),
@@ -77,7 +75,7 @@ export const discoveryResponseSchema = z.looseObject({
  * transaction_id. Both are optional here because the API never sends both at
  * once; the code that handles an event reads whichever one matches its type.
  */
-export const transactionEventSchema = z.strictObject({
+export const transactionEventSchema = z.looseObject({
   type: z.enum(['TRANSACTION_ADDED', 'TRANSACTION_UPDATED', 'TRANSACTION_DELETED']),
   transaction: transactionSchema.optional(),
   transaction_id: z.string().optional(),

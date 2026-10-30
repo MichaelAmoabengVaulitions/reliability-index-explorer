@@ -38,9 +38,14 @@ describe('transactionSchema', () => {
     expect(transactionSchema.safeParse(validTransaction).success).toBe(true);
   });
 
-  it('rejects a transaction with an extra unknown field (strict mode)', () => {
+  it('accepts a transaction with an extra field the app does not know about', () => {
     const withExtra = { ...validTransaction, unknownField: 'x' };
-    expect(transactionSchema.safeParse(withExtra).success).toBe(false);
+    expect(transactionSchema.safeParse(withExtra).success).toBe(true);
+  });
+
+  it('rejects a transaction with a required field missing', () => {
+    const withoutMerchant = { ...validTransaction, merchant_name: undefined };
+    expect(transactionSchema.safeParse(withoutMerchant).success).toBe(false);
   });
 
   it('rejects a transaction whose date is not YYYY-MM-DD', () => {
@@ -55,6 +60,15 @@ describe('transactionSchema', () => {
 });
 
 describe('reliabilityResponseSchema', () => {
+  it('accepts extra fields at the top level and inside metrics', () => {
+    const withExtras = {
+      ...validReliabilityResponse,
+      model_version: 'v2',
+      metrics: { ...validReliabilityResponse.metrics, savings_rate: 0.1 },
+    };
+    expect(reliabilityResponseSchema.safeParse(withExtras).success).toBe(true);
+  });
+
   it('rejects a reliability_index above 100', () => {
     const tooHigh = { ...validReliabilityResponse, reliability_index: 101 };
     expect(reliabilityResponseSchema.safeParse(tooHigh).success).toBe(false);
