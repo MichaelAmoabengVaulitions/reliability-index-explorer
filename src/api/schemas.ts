@@ -68,6 +68,8 @@ export const discoveryResponseSchema = z.looseObject({
   available_users: z.array(z.string()).optional(),
   users: z.array(z.string()).optional(),
   userIds: z.array(z.string()).optional(),
+  // Live events are served from their own host, not the REST API.
+  sse: z.looseObject({ base_url: z.url() }).optional(),
 });
 
 /*

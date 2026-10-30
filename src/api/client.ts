@@ -3,6 +3,7 @@ import type { z } from 'zod';
 import { config } from '@/config';
 
 import {
+  type DiscoveryResponse,
   type OffsetPaginatedResponse,
   type ReliabilityResponse,
   type Transaction,
@@ -145,32 +146,48 @@ export async function fetchAllTransactions({
   }
 }
 
+export interface Discovery {
+  userIds: readonly string[];
+  streamBaseUrl: string;
+}
+
+function pickUserIds(discovery: DiscoveryResponse): readonly string[] {
+  const userIdLists = [discovery.available_users, discovery.users, discovery.userIds];
+  const firstFilledList = userIdLists.find((list) => list !== undefined && list.length > 0);
+  return firstFilledList ?? config.api.fallbackUserIds;
+}
+
 /*
- * Asks the discovery endpoint which user ids are available. The API
- * specification does not say what this response looks like, so we accept any
- * of the three field names the backend has used ('available_users', 'users'
- * or 'userIds'). If the response has none of them, or does not match what we
- * expect, we fall back to a small sample list so the dropdown is never empty.
- * A failed request is different: that is passed back to the caller, because
- * the network being down is not the same problem as an unexpected response.
+ * Asks the discovery endpoint which user ids are available and where the live
+ * events are served from. The API specification does not say what this
+ * response looks like, so we accept any of the three field names the backend
+ * has used ('available_users', 'users' or 'userIds'). If the response has none
+ * of them, or does not match what we expect, we fall back to a small sample
+ * list so the dropdown is never empty. A failed request is different: that is
+ * passed back to the caller, because the network being down is not the same
+ * problem as an unexpected response.
  */
-export async function fetchAvailableUserIds(): Promise<readonly string[]> {
+export async function fetchDiscovery(): Promise<Discovery> {
   try {
     const discovery = await request('/', discoveryResponseSchema);
-    if (discovery.available_users !== undefined && discovery.available_users.length > 0) {
-      return discovery.available_users;
-    }
-    if (discovery.users !== undefined && discovery.users.length > 0) return discovery.users;
-    if (discovery.userIds !== undefined && discovery.userIds.length > 0) return discovery.userIds;
-    return config.api.fallbackUserIds;
+    return {
+      userIds: pickUserIds(discovery),
+      streamBaseUrl: discovery.sse?.base_url ?? API_BASE_URL,
+    };
   } catch (error) {
     if (error instanceof ValidationError) {
       console.warn(
         'Discovery response did not match the expected layout; falling back to the sample list.',
         error,
       );
-      return config.api.fallbackUserIds;
+      return { userIds: config.api.fallbackUserIds, streamBaseUrl: API_BASE_URL };
     }
     throw error;
   }
+}
+
+// The streaming host's URL ends in a slash, and a double slash gives a 404.
+export function transactionEventsUrl(baseUrl: string, userId: string): string {
+  const base = baseUrl.replace(/\/+$/, '');
+  return `${base}/api/users/${encodeURIComponent(userId)}/transaction-events`;
 }

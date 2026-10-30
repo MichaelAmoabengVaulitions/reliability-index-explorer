@@ -7,11 +7,13 @@ import { server } from '../test-utils/msw/server';
 
 import {
   ApiError,
+  API_BASE_URL,
   ValidationError,
   fetchAllTransactions,
-  fetchAvailableUserIds,
+  fetchDiscovery,
   fetchReliability,
   fetchTransactionPage,
+  transactionEventsUrl,
 } from './client';
 
 describe('fetchReliability', () => {
@@ -114,21 +116,54 @@ describe('fetchAllTransactions', () => {
   }, 2000);
 });
 
-describe('fetchAvailableUserIds', () => {
+describe('transactionEventsUrl', () => {
+  it('joins the base URL and the path with one slash', () => {
+    expect(transactionEventsUrl('https://stream.example.com/', 'user_1001')).toBe(
+      'https://stream.example.com/api/users/user_1001/transaction-events',
+    );
+    expect(transactionEventsUrl('https://stream.example.com', 'user_1001')).toBe(
+      'https://stream.example.com/api/users/user_1001/transaction-events',
+    );
+  });
+
+  it('encodes the user id', () => {
+    expect(transactionEventsUrl('https://stream.example.com', 'user/1')).toBe(
+      'https://stream.example.com/api/users/user%2F1/transaction-events',
+    );
+  });
+});
+
+describe('fetchDiscovery', () => {
   it('returns the users array when the discovery response carries that key', async () => {
     server.use(
       http.get(`${config.api.baseUrl}/`, () =>
         HttpResponse.json({ users: ['user_1001', 'user_1002'] }),
       ),
     );
-    expect(await fetchAvailableUserIds()).toEqual(['user_1001', 'user_1002']);
+    expect((await fetchDiscovery()).userIds).toEqual(['user_1001', 'user_1002']);
+  });
+
+  it('returns the streaming host from the discovery response', async () => {
+    server.use(
+      http.get(`${config.api.baseUrl}/`, () =>
+        HttpResponse.json({
+          users: ['user_1001'],
+          sse: { base_url: 'https://stream.example.com/' },
+        }),
+      ),
+    );
+    expect((await fetchDiscovery()).streamBaseUrl).toBe('https://stream.example.com/');
+  });
+
+  it('falls back to the API host when the response has no streaming host', async () => {
+    expect((await fetchDiscovery()).streamBaseUrl).toBe(API_BASE_URL);
   });
 
   it('also accepts a userIds array, since the spec does not pin the shape', async () => {
     server.use(
       http.get(`${config.api.baseUrl}/`, () => HttpResponse.json({ userIds: ['user_2001'] })),
     );
-    expect(await fetchAvailableUserIds()).toEqual(['user_2001']);
+    expect((await fetchDiscovery()).userIds).toEqual(['user_2001']);
   });
 
   it('also accepts an available_users array, the shape the real backend actually returns', async () => {
@@ -140,7 +175,7 @@ describe('fetchAvailableUserIds', () => {
         }),
       ),
     );
-    expect(await fetchAvailableUserIds()).toEqual(['user_1001', 'user_1002', 'user_1003']);
+    expect((await fetchDiscovery()).userIds).toEqual(['user_1001', 'user_1002', 'user_1003']);
   });
 
   it('falls back to the sample user when none of the known keys are present, so the picker stays usable', async () => {
@@ -149,7 +184,7 @@ describe('fetchAvailableUserIds', () => {
         HttpResponse.json({ endpoints: ['/api/users/:userId/reliability'] }),
       ),
     );
-    expect(await fetchAvailableUserIds()).toEqual(['user_1001']);
+    expect((await fetchDiscovery()).userIds).toEqual(['user_1001']);
   });
 
   it('throws an ApiError when the discovery endpoint itself fails, since the network being down is not the same as an unexpected response', async () => {
@@ -158,6 +193,6 @@ describe('fetchAvailableUserIds', () => {
         HttpResponse.json({ error: 'boom' }, { status: 500 }),
       ),
     );
-    await expect(fetchAvailableUserIds()).rejects.toBeInstanceOf(ApiError);
+    await expect(fetchDiscovery()).rejects.toBeInstanceOf(ApiError);
   });
 });

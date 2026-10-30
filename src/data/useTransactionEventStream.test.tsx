@@ -3,11 +3,13 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { API_BASE_URL } from '@/api/client';
+import { config } from '@/config';
 import { buildTransaction } from '@/test-utils/fixtures/transactions';
 
 import type { TransactionsQueryData } from './queries';
 import { queryKeys } from './queryKeys';
-import { toState, type TransactionState } from './transactionState';
+import { toState, type LiveEvent, type TransactionState } from './transactionState';
 import { useTransactionEventStream } from './useTransactionEventStream';
 
 interface SimpleListener {
@@ -30,6 +32,7 @@ class MockEventSource {
   static readonly CLOSED = 2;
   url: string;
   private listeners = new Map<string, SimpleListener[]>();
+  private nextEventId = 1;
   closed = false;
   readyState: number = MockEventSource.CONNECTING;
   onopen: (() => void) | null = null;
@@ -46,8 +49,8 @@ class MockEventSource {
     this.listeners.set(type, existing);
   }
 
-  emit(type: string, data: unknown): void {
-    const event = new MessageEvent(type, { data: JSON.stringify(data) });
+  emit(type: string, data: unknown, eventId = String(this.nextEventId++)): void {
+    const event = new MessageEvent(type, { data: JSON.stringify(data), lastEventId: eventId });
     for (const fn of this.listeners.get(type) ?? []) fn(event);
   }
 
@@ -60,6 +63,7 @@ class MockEventSource {
 const USER_ID = 'user_1001';
 const FROM = '2025-09-01';
 const TO = '2026-02-20';
+const STREAM_BASE_URL = 'https://stream.example.com/';
 
 function buildWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
@@ -67,10 +71,24 @@ function buildWrapper(queryClient: QueryClient) {
   };
 }
 
-function seedTransactionsCache(queryClient: QueryClient, state: TransactionState): void {
+// A client that already knows the streaming host, so the stream opens straight away.
+function createClient(): QueryClient {
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(queryKeys.discovery, {
+    userIds: [USER_ID],
+    streamBaseUrl: STREAM_BASE_URL,
+  });
+  return queryClient;
+}
+
+function seedTransactionsCache(
+  queryClient: QueryClient,
+  state: TransactionState,
+  liveEvents: LiveEvent[] = [],
+): void {
   queryClient.setQueryData<TransactionsQueryData>(queryKeys.transactions(USER_ID, FROM, TO), {
     state,
-    liveEvents: [],
+    liveEvents,
   });
 }
 
@@ -88,17 +106,216 @@ afterEach(() => {
 });
 
 describe('useTransactionEventStream', () => {
-  it('opens a stream to the user-specific events endpoint when a user is selected', () => {
-    const queryClient = new QueryClient();
+  it('opens the stream on the streaming host from discovery', () => {
+    const queryClient = createClient();
     renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
     });
-    expect(MockEventSource.last).not.toBeNull();
-    expect(MockEventSource.last?.url).toContain(`/api/users/${USER_ID}/transaction-events`);
+    expect(MockEventSource.last?.url).toBe(
+      `https://stream.example.com/api/users/${USER_ID}/transaction-events`,
+    );
+  });
+
+  it('waits for discovery before opening the stream', async () => {
+    renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(new QueryClient()),
+    });
+    expect(MockEventSource.last).toBeNull();
+    await waitFor(() => {
+      expect(MockEventSource.last?.url).toBe(
+        `${API_BASE_URL}/api/users/${USER_ID}/transaction-events`,
+      );
+    });
+  });
+
+  it('applies a replayed event once and counts it once', async () => {
+    const queryClient = createClient();
+    seedTransactionsCache(queryClient, toState([]));
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+    const added = { type: 'TRANSACTION_ADDED', transaction: buildTransaction({ id: 'tx_new' }) };
+
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', added, '1');
+    });
+    await waitFor(() => expect(result.current.eventCount).toBe(1));
+
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', added, '1');
+    });
+    await new Promise((resolve) => setTimeout(resolve, config.stream.batchMs * 2));
+
+    expect(result.current.eventCount).toBe(1);
+    expect(readTransactionsCache(queryClient)?.liveEvents).toHaveLength(1);
+  });
+
+  it('skips an event already in the cache from an earlier visit to this user', async () => {
+    const queryClient = createClient();
+    const transaction = buildTransaction({ id: 'tx_new' });
+    const event = { type: 'TRANSACTION_ADDED' as const, transaction };
+    seedTransactionsCache(queryClient, toState([transaction]), [{ id: '1', event }]);
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', event, '1');
+    });
+    await new Promise((resolve) => setTimeout(resolve, config.stream.batchMs * 2));
+
+    expect(result.current.eventCount).toBe(0);
+    expect(readTransactionsCache(queryClient)?.liveEvents).toHaveLength(1);
+  });
+
+  it('holds events that arrive during the first load and applies them after it', async () => {
+    const queryClient = createClient();
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', {
+        type: 'TRANSACTION_ADDED',
+        transaction: buildTransaction({ id: 'tx_early' }),
+      });
+    });
+    await new Promise((resolve) => setTimeout(resolve, config.stream.batchMs * 2));
+    expect(result.current.eventCount).toBe(0);
+
+    act(() => {
+      seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_loaded' })]));
+    });
+
+    await waitFor(() => {
+      expect(readTransactionsCache(queryClient)?.state.allIds).toEqual(['tx_loaded', 'tx_early']);
+    });
+    await waitFor(() => expect(result.current.eventCount).toBe(1));
+  });
+
+  it('ignores an event dated outside the scoring window', async () => {
+    const queryClient = createClient();
+    seedTransactionsCache(queryClient, toState([]));
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', {
+        type: 'TRANSACTION_ADDED',
+        transaction: buildTransaction({ id: 'tx_late', date: '2026-03-01' }),
+      });
+    });
+    await new Promise((resolve) => setTimeout(resolve, config.stream.batchMs * 2));
+
+    expect(result.current.eventCount).toBe(0);
+    expect(readTransactionsCache(queryClient)?.state.allIds).toEqual([]);
+  });
+
+  it('removes a transaction when an update moves it out of the scoring window', async () => {
+    const queryClient = createClient();
+    seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1' })]));
+    renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+
+    act(() => {
+      MockEventSource.last?.emit('TRANSACTION_UPDATED', {
+        type: 'TRANSACTION_UPDATED',
+        transaction: buildTransaction({ id: 'tx_1', date: '2026-03-01' }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(readTransactionsCache(queryClient)?.state.allIds).toEqual([]);
+    });
+  });
+
+  it('applies events that arrive close together in one cache update', async () => {
+    const queryClient = createClient();
+    seedTransactionsCache(queryClient, toState([]));
+    const setQueryData = vi.spyOn(queryClient, 'setQueryData');
+    const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+      wrapper: buildWrapper(queryClient),
+    });
+
+    act(() => {
+      for (const id of ['tx_1', 'tx_2', 'tx_3']) {
+        MockEventSource.last?.emit('TRANSACTION_ADDED', {
+          type: 'TRANSACTION_ADDED',
+          transaction: buildTransaction({ id }),
+        });
+      }
+    });
+
+    await waitFor(() => expect(result.current.eventCount).toBe(3));
+    expect(setQueryData).toHaveBeenCalledTimes(1);
+  });
+
+  describe('refreshing the score', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    function emitAdded(id: string) {
+      MockEventSource.last?.emit('TRANSACTION_ADDED', {
+        type: 'TRANSACTION_ADDED',
+        transaction: buildTransaction({ id }),
+      });
+    }
+
+    it('refreshes the score once, a short while after events stop', () => {
+      const queryClient = createClient();
+      seedTransactionsCache(queryClient, toState([]));
+      const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
+      renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+        wrapper: buildWrapper(queryClient),
+      });
+
+      act(() => {
+        emitAdded('tx_1');
+        vi.advanceTimersByTime(config.stream.batchMs);
+      });
+      act(() => {
+        emitAdded('tx_2');
+        vi.advanceTimersByTime(config.stream.batchMs);
+      });
+      expect(invalidateQueries).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(config.stream.scoreRefreshDelayMs);
+      });
+
+      expect(invalidateQueries).toHaveBeenCalledTimes(1);
+      expect(invalidateQueries).toHaveBeenCalledWith({
+        queryKey: queryKeys.reliability(USER_ID, TO),
+      });
+    });
+
+    it('does not refresh the score when nothing new arrived', () => {
+      const queryClient = createClient();
+      const event = { type: 'TRANSACTION_ADDED' as const, transaction: buildTransaction() };
+      seedTransactionsCache(queryClient, toState([]), [{ id: '1', event }]);
+      const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
+      renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+        wrapper: buildWrapper(queryClient),
+      });
+
+      act(() => {
+        MockEventSource.last?.emit('TRANSACTION_ADDED', event, '1');
+        vi.advanceTimersByTime(config.stream.batchMs + config.stream.scoreRefreshDelayMs);
+      });
+
+      expect(invalidateQueries).not.toHaveBeenCalled();
+    });
   });
 
   it('does not open a stream while the user id is empty', () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     renderHook(() => useTransactionEventStream('', FROM, TO), {
       wrapper: buildWrapper(queryClient),
     });
@@ -106,7 +323,7 @@ describe('useTransactionEventStream', () => {
   });
 
   it('closes the stream when the component using it unmounts', () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     const { unmount } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
     });
@@ -115,7 +332,7 @@ describe('useTransactionEventStream', () => {
   });
 
   it('applies a TRANSACTION_ADDED event to the cached transactions', async () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_existing' })]));
     renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
@@ -135,7 +352,7 @@ describe('useTransactionEventStream', () => {
   });
 
   it('applies a TRANSACTION_UPDATED event by replacing the existing entry in place', async () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1', amount: 10 })]));
     renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
@@ -154,7 +371,7 @@ describe('useTransactionEventStream', () => {
   });
 
   it('applies a TRANSACTION_DELETED event by removing the entry from both lookups', async () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     seedTransactionsCache(
       queryClient,
       toState([buildTransaction({ id: 'tx_1' }), buildTransaction({ id: 'tx_2' })]),
@@ -177,7 +394,7 @@ describe('useTransactionEventStream', () => {
 
   it('skips an event that does not match the expected shape, and logs a warning', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1' })]));
     renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
@@ -192,7 +409,7 @@ describe('useTransactionEventStream', () => {
   });
 
   it('reports an open status once the stream connection is established', async () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
     });
@@ -204,7 +421,7 @@ describe('useTransactionEventStream', () => {
   });
 
   it('reports an idle status when no user is selected', () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     const { result } = renderHook(() => useTransactionEventStream('', FROM, TO), {
       wrapper: buildWrapper(queryClient),
     });
@@ -212,7 +429,7 @@ describe('useTransactionEventStream', () => {
   });
 
   it('stays in the connecting state when the stream drops but the browser is retrying', async () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
     });
@@ -229,7 +446,7 @@ describe('useTransactionEventStream', () => {
   });
 
   it('reports a closed status only when the connection has failed for good', async () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
     });
@@ -242,7 +459,7 @@ describe('useTransactionEventStream', () => {
   });
 
   it('counts each live update applied, whatever kind it is', async () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     seedTransactionsCache(
       queryClient,
       toState([buildTransaction({ id: 'tx_1' }), buildTransaction({ id: 'tx_2' })]),
@@ -270,7 +487,7 @@ describe('useTransactionEventStream', () => {
 
   it('does not count an event that fails validation', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1' })]));
     const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
@@ -283,7 +500,7 @@ describe('useTransactionEventStream', () => {
   });
 
   it('starts the count again from zero when the selected user changes', async () => {
-    const queryClient = new QueryClient();
+    const queryClient = createClient();
     seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1' })]));
     const { result, rerender } = renderHook(
       ({ userId }: { userId: string }) => useTransactionEventStream(userId, FROM, TO),

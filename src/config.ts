@@ -21,10 +21,8 @@ export const config = {
     virtualOverscan: 5,
   },
   stream: {
-    initialRetryMs: 1_000,
-    maxRetryMs: 10_000,
-    retryJitterMs: 500,
-    batchFrameMs: 16,
+    batchMs: 100,
+    scoreRefreshDelayMs: 2_000,
   },
   query: {
     staleTimeMs: 60_000,
