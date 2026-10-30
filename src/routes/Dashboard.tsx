@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { Breakdown } from '@/features/breakdown/Breakdown';
 import { Cashflow } from '@/features/cashflow/Cashflow';

@@ -1,9 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type RenderResult, render } from '@testing-library/react';
 import { type ReactElement } from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-
-import { ROUTER_FUTURE_FLAGS } from '@/routerFutureFlags';
+import { MemoryRouter, Route, Routes } from 'react-router';
 
 interface RenderOptions {
   /** The starting URL or list of URLs the in-memory router opens with. */
@@ -27,7 +25,7 @@ export function renderWithProviders(ui: ReactElement, options: RenderOptions = {
   const initialEntries = options.initialEntries ?? [path];
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={initialEntries} future={ROUTER_FUTURE_FLAGS}>
+      <MemoryRouter initialEntries={initialEntries}>
         <Routes>
           <Route path={path} element={ui} />
         </Routes>

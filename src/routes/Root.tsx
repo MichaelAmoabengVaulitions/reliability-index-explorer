@@ -1,4 +1,4 @@
-import { Outlet, useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router';
 
 import { useSelectedUser } from '@/store/selectedUser';
 import { useUrlSync } from '@/store/urlSync';
