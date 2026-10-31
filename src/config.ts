@@ -7,6 +7,7 @@ export const config = {
   api: {
     baseUrl: 'https://wydokyegph.execute-api.eu-central-1.amazonaws.com',
     transactionPageLimit: 500,
+    requestTimeoutMs: 20_000,
     scoringWindowMonths: 6,
     /*
      * The first month-end with six full months of data behind it. The data
@@ -29,6 +30,8 @@ export const config = {
   stream: {
     batchMs: 100,
     scoreRefreshDelayMs: 2_000,
+    reconnectInitialMs: 1_000,
+    reconnectMaxMs: 30_000,
   },
   query: {
     staleTimeMs: 60_000,

@@ -492,17 +492,130 @@ describe('useTransactionEventStream', () => {
     await waitFor(() => expect(result.current.status).toBe('connecting'));
   });
 
-  it('reports a closed status only when the connection has failed for good', async () => {
+  describe('when the browser gives up on the stream', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    function giveUp() {
+      act(() => {
+        const source = MockEventSource.last;
+        if (source) source.readyState = MockEventSource.CLOSED;
+        source?.onerror?.();
+      });
+    }
+
+    function wait(ms: number) {
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+    }
+
+    it('shows connecting and opens a new stream after a short wait', () => {
+      const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+        wrapper: buildWrapper(createClient()),
+      });
+      const firstSource = MockEventSource.last;
+
+      giveUp();
+      expect(result.current.status).toBe('connecting');
+
+      wait(config.stream.reconnectInitialMs - 1);
+      expect(MockEventSource.last).toBe(firstSource);
+
+      wait(1);
+      expect(MockEventSource.last).not.toBe(firstSource);
+    });
+
+    it('doubles the wait each time, up to the maximum', () => {
+      renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+        wrapper: buildWrapper(createClient()),
+      });
+
+      let expectedWait: number = config.stream.reconnectInitialMs;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const source = MockEventSource.last;
+        giveUp();
+        wait(expectedWait - 1);
+        expect(MockEventSource.last).toBe(source);
+        wait(1);
+        expect(MockEventSource.last).not.toBe(source);
+        expectedWait = Math.min(expectedWait * 2, config.stream.reconnectMaxMs);
+      }
+    });
+
+    it('goes back to the short wait after a connection works', () => {
+      renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+        wrapper: buildWrapper(createClient()),
+      });
+
+      giveUp();
+      wait(config.stream.reconnectInitialMs);
+      act(() => {
+        MockEventSource.last?.onopen?.();
+      });
+
+      const source = MockEventSource.last;
+      giveUp();
+      wait(config.stream.reconnectInitialMs);
+      expect(MockEventSource.last).not.toBe(source);
+    });
+
+    it('applies events from the new stream', () => {
+      const queryClient = createClient();
+      seedTransactionsCache(queryClient, toState([]));
+      renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+        wrapper: buildWrapper(queryClient),
+      });
+
+      giveUp();
+      wait(config.stream.reconnectInitialMs);
+      act(() => {
+        MockEventSource.last?.emit('TRANSACTION_ADDED', {
+          type: 'TRANSACTION_ADDED',
+          transaction: buildTransaction({ id: 'tx_after_reconnect' }),
+        });
+      });
+      wait(config.stream.batchMs);
+
+      expect(readTransactionsCache(queryClient)?.state.allIds).toEqual(['tx_after_reconnect']);
+    });
+
+    it('stops trying once the page is closed', () => {
+      const { unmount } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
+        wrapper: buildWrapper(createClient()),
+      });
+
+      giveUp();
+      const source = MockEventSource.last;
+      unmount();
+      wait(config.stream.reconnectMaxMs);
+
+      expect(MockEventSource.last).toBe(source);
+    });
+  });
+
+  it('does not count or keep a delete of a row we do not have', async () => {
     const queryClient = createClient();
+    seedTransactionsCache(queryClient, toState([buildTransaction({ id: 'tx_1' })]));
     const { result } = renderHook(() => useTransactionEventStream(USER_ID, FROM, TO), {
       wrapper: buildWrapper(queryClient),
     });
+
     act(() => {
-      const source = MockEventSource.last;
-      if (source) source.readyState = MockEventSource.CLOSED;
-      source?.onerror?.();
+      MockEventSource.last?.emit('TRANSACTION_DELETED', {
+        type: 'TRANSACTION_DELETED',
+        transaction_id: 'tx_unknown',
+      });
     });
-    await waitFor(() => expect(result.current.status).toBe('closed'));
+    await new Promise((resolve) => setTimeout(resolve, config.stream.batchMs * 2));
+
+    expect(result.current.eventCount).toBe(0);
+    expect(readTransactionsCache(queryClient)?.liveEvents).toEqual([]);
   });
 
   it('counts each live update applied, whatever kind it is', async () => {

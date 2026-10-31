@@ -10,6 +10,7 @@ import { queryKeys } from './queryKeys';
 import {
   applyTransactionEvents,
   fitEventToWindow,
+  onlyChangingEvents,
   onlyNewEvents,
   type LiveEvent,
 } from './transactionState';
@@ -20,9 +21,8 @@ import {
  *  "idle":        nothing to connect to yet (no user picked).
  *  "connecting":  the stream is opening, or it dropped and is being retried.
  *  "open":        the stream is connected and events are arriving.
- *  "closed":      the stream failed for good and is not being retried.
  */
-export type StreamStatus = 'idle' | 'connecting' | 'open' | 'closed';
+export type StreamStatus = 'idle' | 'connecting' | 'open';
 
 /**
  * What the live updates hook reports back to the component using it.
@@ -79,7 +79,7 @@ export function useTransactionEventStream(userId: string, from: string, to: stri
   const streamBaseUrl = discovery?.streamBaseUrl;
 
   /*
-   * We keep only the connecting/open/closed part of the status here. The
+   * We keep only the connecting/open part of the status here. The
    * "idle" value is worked out from shouldSubscribe as the component draws,
    * so we never have to set state from inside the effect to go back to idle.
    */
@@ -108,21 +108,6 @@ export function useTransactionEventStream(userId: string, from: string, to: stri
   useEffect(() => {
     if (!shouldSubscribe || streamBaseUrl === undefined) return;
 
-    const source = new EventSource(transactionEventsUrl(streamBaseUrl, userId));
-    source.onopen = () => setConnectionStatus('open');
-    /*
-     * EventSource raises an error for any broken connection, including the
-     * ordinary case where the connection dropped and the browser is already
-     * reconnecting on its own. While it retries, readyState stays at
-     * CONNECTING; it only becomes CLOSED when the browser has given up for
-     * good. So a dropped-but-retrying stream is shown as "connecting", not as
-     * a red disconnected badge, and "closed" is kept for a real, final failure.
-     */
-    source.onerror = () => {
-      const hasFailedForGood = source.readyState === EventSource.CLOSED;
-      setConnectionStatus(hasFailedForGood ? 'closed' : 'connecting');
-    };
-
     const cacheKey = queryKeys.transactions(userId, from, to);
     let pendingEvents: LiveEvent[] = [];
     let batchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -141,7 +126,10 @@ export function useTransactionEventStream(userId: string, from: string, to: stri
         return;
       }
 
-      const newEvents = onlyNewEvents(cached.liveEvents, pendingEvents);
+      const newEvents = onlyChangingEvents(
+        cached.state,
+        onlyNewEvents(cached.liveEvents, pendingEvents),
+      );
       pendingEvents = [];
       if (newEvents.length === 0) return;
 
@@ -186,12 +174,42 @@ export function useTransactionEventStream(userId: string, from: string, to: stri
       if (batchTimer === undefined) scheduleBatch();
     };
 
-    for (const eventName of EVENT_TYPE_NAMES) {
-      source.addEventListener(eventName, handleEvent);
-    }
+    let activeSource: EventSource | undefined;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let reconnectDelay: number = config.stream.reconnectInitialMs;
+
+    const connect = (): void => {
+      const source = new EventSource(transactionEventsUrl(streamBaseUrl, userId));
+      activeSource = source;
+
+      source.onopen = () => {
+        reconnectDelay = config.stream.reconnectInitialMs;
+        setConnectionStatus('open');
+      };
+
+      /*
+       * EventSource raises an error for any broken connection. Usually the
+       * browser is already reconnecting by itself. Only when readyState is
+       * CLOSED has it given up, and then we have to open a new one ourselves.
+       */
+      source.onerror = () => {
+        setConnectionStatus('connecting');
+        if (source.readyState === EventSource.CLOSED) {
+          reconnectTimer = setTimeout(connect, reconnectDelay);
+          reconnectDelay = Math.min(reconnectDelay * 2, config.stream.reconnectMaxMs);
+        }
+      };
+
+      for (const eventName of EVENT_TYPE_NAMES) {
+        source.addEventListener(eventName, handleEvent);
+      }
+    };
+
+    connect();
 
     return () => {
-      source.close();
+      activeSource?.close();
+      clearTimeout(reconnectTimer);
       clearTimeout(batchTimer);
       clearTimeout(scoreRefreshTimer);
     };

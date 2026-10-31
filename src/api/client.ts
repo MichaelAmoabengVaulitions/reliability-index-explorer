@@ -14,7 +14,13 @@ import {
   reliabilityResponseSchema,
 } from './schemas';
 
-export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? config.api.baseUrl;
+export function trimTrailingSlashes(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+export const API_BASE_URL: string = trimTrailingSlashes(
+  import.meta.env.VITE_API_BASE_URL ?? config.api.baseUrl,
+);
 
 export class ApiError extends Error {
   readonly status: number;
@@ -55,17 +61,27 @@ async function readErrorMessage(response: Response, fallback: string): Promise<s
   return fallback;
 }
 
-export async function request<S extends z.ZodType>(
+async function readJson(response: Response, path: string): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new ApiError(response.status, path, `Response from ${path} was not valid JSON.`);
+    }
+    throw error;
+  }
+}
+
+async function readResponse<S extends z.ZodType>(
+  response: Response,
   path: string,
   schema: S,
-  init?: RequestInit,
 ): Promise<z.infer<S>> {
-  const response = await fetch(`${API_BASE_URL}${path}`, init);
   if (!response.ok) {
     const message = await readErrorMessage(response, response.statusText || 'Request failed');
     throw new ApiError(response.status, path, message);
   }
-  const body: unknown = await response.json();
+  const body = await readJson(response, path);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     const summary = parsed.error.issues
@@ -79,11 +95,49 @@ export async function request<S extends z.ZodType>(
   return parsed.data;
 }
 
-export function fetchReliability(userId: string, from: string): Promise<ReliabilityResponse> {
+/*
+ * The signal lets React Query cancel a request nobody needs any more. The
+ * timeout uses the same abort, so we track which of the two happened: a
+ * timeout is an error to show, and a cancel is not.
+ */
+export async function request<S extends z.ZodType>(
+  path: string,
+  schema: S,
+  signal?: AbortSignal,
+): Promise<z.infer<S>> {
+  signal?.throwIfAborted();
+
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, config.api.requestTimeoutMs);
+  signal?.addEventListener('abort', cancel);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, { signal: controller.signal });
+    return await readResponse(response, path, schema);
+  } catch (error) {
+    if (timedOut) throw new ApiError(0, path, 'The request timed out.');
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener('abort', cancel);
+  }
+}
+
+export function fetchReliability(
+  userId: string,
+  from: string,
+  signal?: AbortSignal,
+): Promise<ReliabilityResponse> {
   const search = new URLSearchParams({ from });
   return request(
-    `/api/users/${userId}/reliability?${search.toString()}`,
+    `/api/users/${encodeURIComponent(userId)}/reliability?${search.toString()}`,
     reliabilityResponseSchema,
+    signal,
   );
 }
 
@@ -93,6 +147,7 @@ interface FetchTransactionPageOptions {
   to: string;
   page?: number;
   limit?: number;
+  signal?: AbortSignal;
 }
 
 const FIRST_PAGE = 1;
@@ -108,6 +163,7 @@ export function fetchTransactionPage({
   to,
   page = FIRST_PAGE,
   limit = config.api.transactionPageLimit,
+  signal,
 }: FetchTransactionPageOptions): Promise<OffsetPaginatedResponse> {
   const search = new URLSearchParams({
     from,
@@ -115,13 +171,18 @@ export function fetchTransactionPage({
     page: String(page),
     limit: String(limit),
   });
-  return request(`/api/users/${userId}/transactions?${search.toString()}`, offsetPaginatedSchema);
+  return request(
+    `/api/users/${encodeURIComponent(userId)}/transactions?${search.toString()}`,
+    offsetPaginatedSchema,
+    signal,
+  );
 }
 
 interface FetchAllTransactionsOptions {
   userId: string;
   from: string;
   to: string;
+  signal?: AbortSignal;
 }
 
 /*
@@ -132,11 +193,12 @@ export async function fetchAllTransactions({
   userId,
   from,
   to,
+  signal,
 }: FetchAllTransactionsOptions): Promise<Transaction[]> {
   const all: Transaction[] = [];
   let page = FIRST_PAGE;
   while (true) {
-    const result = await fetchTransactionPage({ userId, from, to, page });
+    const result = await fetchTransactionPage({ userId, from, to, page, signal });
     all.push(...result.transactions);
     /*
      * Stop when there are no more pages, or when the backend reports more but
@@ -198,6 +260,6 @@ export async function fetchDiscovery(): Promise<Discovery> {
 
 // The streaming host's URL ends in a slash, and a double slash gives a 404.
 export function transactionEventsUrl(baseUrl: string, userId: string): string {
-  const base = baseUrl.replace(/\/+$/, '');
+  const base = trimTrailingSlashes(baseUrl);
   return `${base}/api/users/${encodeURIComponent(userId)}/transaction-events`;
 }

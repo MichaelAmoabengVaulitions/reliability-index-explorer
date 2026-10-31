@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { reliabilityResponseSchema, transactionEventSchema, transactionSchema } from './schemas';
+import {
+  offsetPaginatedSchema,
+  reliabilityResponseSchema,
+  transactionEventSchema,
+  transactionSchema,
+} from './schemas';
 
 const validTransaction = {
   id: 'tx_0001',
@@ -56,6 +61,29 @@ describe('transactionSchema', () => {
   it('rejects a transaction whose type is outside the debit/credit enum', () => {
     const badType = { ...validTransaction, type: 'transfer' };
     expect(transactionSchema.safeParse(badType).success).toBe(false);
+  });
+});
+
+describe('offsetPaginatedSchema', () => {
+  const page = { total: 2, page: 1, limit: 500, has_more: false };
+
+  it('rejects a page with no transaction list', () => {
+    expect(offsetPaginatedSchema.safeParse(page).success).toBe(false);
+  });
+
+  it('keeps every transaction when they are all valid', () => {
+    const result = offsetPaginatedSchema.parse({ ...page, transactions: [validTransaction] });
+    expect(result.transactions).toHaveLength(1);
+  });
+
+  it('leaves out a transaction that fails its check', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const result = offsetPaginatedSchema.parse({
+      ...page,
+      transactions: [validTransaction, { ...validTransaction, amount: 'lots' }],
+    });
+    expect(result.transactions).toHaveLength(1);
+    warn.mockRestore();
   });
 });
 

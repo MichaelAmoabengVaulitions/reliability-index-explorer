@@ -75,6 +75,25 @@ export function onlyNewEvents(
 }
 
 /*
+ * Leaves out events that wouldn't change anything, like a delete of a row we
+ * don't have, so "N live updates" only counts what the analyst can see.
+ */
+export function onlyChangingEvents(
+  state: TransactionState,
+  liveEvents: readonly LiveEvent[],
+): LiveEvent[] {
+  const knownIds = new Set(state.allIds);
+  return liveEvents.filter(({ event }) => {
+    if (event.type === 'TRANSACTION_DELETED') {
+      return event.transaction_id !== undefined && knownIds.delete(event.transaction_id);
+    }
+    if (event.transaction === undefined) return false;
+    knownIds.add(event.transaction.id);
+    return true;
+  });
+}
+
+/*
  * Returns the event to apply for a scoring window, or undefined if it should
  * be ignored. An update that moves a transaction out of the window becomes a
  * delete, because the old copy would otherwise stay in the list.

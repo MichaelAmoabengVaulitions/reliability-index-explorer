@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { TransactionEvent } from '@/api/schemas';
 import { buildTransaction } from '@/test-utils/fixtures/transactions';
@@ -40,6 +40,26 @@ describe('useTransactions', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(new Set(countsSeen)).toEqual(new Set([2000]));
+  });
+
+  it('cancels the download when the query is cancelled', async () => {
+    const { queryClient, wrapper } = createQueryClientAndWrapper();
+    vi.mocked(fetch).mockImplementation(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        }),
+    );
+    renderHook(() => useTransactions(window.userId, window.from, window.to), { wrapper });
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+
+    await act(async () => {
+      await queryClient.cancelQueries();
+    });
+
+    expect(vi.mocked(fetch).mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
   });
 
   it('keeps live stream events when the transactions are fetched again', async () => {
