@@ -47,6 +47,8 @@ export const config = {
      */
     mediumBandMin: 50,
     highBandMin: 75,
+    resilienceMinPoints: -20,
+    resilienceMaxPoints: 25,
   },
   locale: 'en-US',
   // Day before month, so a date reads as "28 Aug 2026".

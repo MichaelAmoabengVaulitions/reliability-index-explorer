@@ -139,6 +139,20 @@ export function sumDriverPoints(drivers: readonly string[]): number {
   return drivers.reduce((total, driver) => total + (parseDriver(driver).points ?? 0), 0);
 }
 
+/*
+ * Where the resilience bar sits on its -20 to +25 scale, as percentages. The
+ * bar starts at zero, not at the left edge, so it runs left for negative
+ * points and has no width at zero.
+ */
+export function resilienceBarSpan(points: number): { leftPercent: number; widthPercent: number } {
+  const { resilienceMinPoints: minimum, resilienceMaxPoints: maximum } = config.scoring;
+  const percentAlongScale = (value: number) => ((value - minimum) / (maximum - minimum)) * 100;
+
+  const zero = percentAlongScale(0);
+  const end = percentAlongScale(Math.min(maximum, Math.max(minimum, points)));
+  return { leftPercent: Math.min(zero, end), widthPercent: Math.abs(end - zero) };
+}
+
 export function formatPoints(points: number): string {
   return `${points > 0 ? '+' : ''}${points} pts`;
 }

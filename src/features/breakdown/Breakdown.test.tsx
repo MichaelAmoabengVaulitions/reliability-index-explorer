@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { buildReliabilityResponse } from '@/test-utils/fixtures/reliability';
@@ -48,6 +48,57 @@ describe('Breakdown', () => {
     );
     renderWithProviders(<Breakdown />, SAMPLE_DASHBOARD_ROUTE);
     expect(await screen.findByText('0 pts')).toBeInTheDocument();
+  });
+
+  describe('the resilience bar', () => {
+    function respondWithDrivers(drivers: string[]) {
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(buildReliabilityResponse({ response: { drivers } })),
+      );
+    }
+
+    it('has a mark at zero, and runs right for positive points', async () => {
+      respondWithDrivers(['Savings behavior detected (+11 pts)']);
+      renderWithProviders(<Breakdown />, SAMPLE_DASHBOARD_ROUTE);
+
+      const bar = await screen.findByRole('img', { name: /Resilience adjustments: \+11 pts/ });
+      expect(bar.querySelector('[data-testid="zero-mark"]')).toBeInTheDocument();
+      const fill = bar.querySelector<HTMLElement>('[data-testid="resilience-fill"]');
+      expect(parseFloat(fill?.style.left ?? '')).toBeCloseTo(44.44, 1);
+      expect(parseFloat(fill?.style.width ?? '')).toBeCloseTo(24.44, 1);
+    });
+
+    it('runs left of zero for negative points', async () => {
+      respondWithDrivers(['Estimated 35 negative balance day(s) (-16 pts)']);
+      renderWithProviders(<Breakdown />, SAMPLE_DASHBOARD_ROUTE);
+
+      const bar = await screen.findByRole('img', { name: /Resilience adjustments: -16 pts/ });
+      const fill = bar.querySelector<HTMLElement>('[data-testid="resilience-fill"]');
+      expect(parseFloat(fill?.style.left ?? '')).toBeCloseTo(8.89, 1);
+    });
+
+    it('shows no fill at zero points, so zero does not look like a score', async () => {
+      respondWithDrivers(['Income present in 0/6 months']);
+      renderWithProviders(<Breakdown />, SAMPLE_DASHBOARD_ROUTE);
+
+      const bar = await screen.findByRole('img', { name: /Resilience adjustments: 0 pts/ });
+      expect(bar.querySelector('[data-testid="resilience-fill"]')).toHaveStyle({ width: '0%' });
+    });
+  });
+
+  it('describes each percentage bar for screen readers', async () => {
+    renderWithProviders(<Breakdown />, SAMPLE_DASHBOARD_ROUTE);
+    expect(await screen.findByRole('img', { name: 'Income Regularity: 83%' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'Essential Payments Consistency: 89%' }),
+    ).toBeInTheDocument();
+  });
+
+  it('draws no bar for income coverage, because the API gives it no scale', async () => {
+    renderWithProviders(<Breakdown />, SAMPLE_DASHBOARD_ROUTE);
+    const heading = await screen.findByRole('heading', { name: 'Income Coverage Ratio' });
+    expect(within(heading.closest('section') as HTMLElement).queryByRole('img')).toBeNull();
+    expect(screen.getByText('1.41x')).toBeInTheDocument();
   });
 
   it('shows a dash on the coverage card when the ratio is null', async () => {

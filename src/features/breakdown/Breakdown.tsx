@@ -1,16 +1,19 @@
+import type { ReactNode } from 'react';
+
 import { config } from '@/config';
 import { useDashboardParams } from '@/data/useDashboardParams';
 import { useReliability } from '@/data/useReliability';
-import { formatCoverageRatio, formatPoints, sumDriverPoints } from '@/domain/scoring';
+import {
+  formatCoverageRatio,
+  formatPoints,
+  resilienceBarSpan,
+  sumDriverPoints,
+} from '@/domain/scoring';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
 
-/*
- * Each signal shows a "cap label" with the points range it can score. The
- * position bar fills to show where the signal sits inside its own range, not
- * on the overall 0 to 100 scale.
- */
+// Each signal shows a "cap label" with the points range it can score.
 const SIGNAL_CAP_LABELS = {
   regularity: '0–25 pts',
   coverage: '0–25 pts',
@@ -18,39 +21,63 @@ const SIGNAL_CAP_LABELS = {
   resilience: '-20 to +25 pts',
 } as const;
 
-/*
- * A coverage ratio of 2x or higher reads as "fully covered", so the position
- * bar treats 2x as a full bar.
- */
-const COVERAGE_BAR_FULL_AT = 2;
+function formatPercent(fraction: number): string {
+  return `${Math.round(fraction * 100)}%`;
+}
 
-const RESILIENCE_MIN_POINTS = -20;
-const RESILIENCE_MAX_POINTS = 25;
+function ShareBar({ label, fraction }: { label: string; fraction: number }) {
+  const width = formatPercent(Math.max(0, Math.min(1, fraction)));
+  return (
+    <div
+      role="img"
+      aria-label={`${label}: ${formatPercent(fraction)}`}
+      className="h-2 w-full rounded-full bg-slate-200"
+    >
+      <div className="h-2 rounded-full bg-brand-500" style={{ width }} />
+    </div>
+  );
+}
+
+// Points can be negative, so this bar grows out from a mark at zero.
+function ResilienceBar({ points }: { points: number }) {
+  const { leftPercent, widthPercent } = resilienceBarSpan(points);
+  const zeroPercent = resilienceBarSpan(0).leftPercent;
+  return (
+    <div
+      role="img"
+      aria-label={`Resilience adjustments: ${formatPoints(points)}`}
+      className="relative h-2 w-full rounded-full bg-slate-200"
+    >
+      <div
+        data-testid="resilience-fill"
+        className="absolute h-2 bg-brand-500"
+        style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+      />
+      <div
+        data-testid="zero-mark"
+        className="absolute -top-1 h-4 w-0.5 bg-slate-900"
+        style={{ left: `${zeroPercent}%` }}
+      />
+    </div>
+  );
+}
 
 interface SignalCardProps {
   title: string;
   /** The displayed value, already formatted for human reading. */
   value: string;
-  /** Where the value sits inside its band, from 0 to 1. Sets how full the bar is. */
-  position: number;
+  /** Left out when the API gives the value no scale to draw it against. */
+  bar?: ReactNode;
   capLabel: string;
   extraRow?: { label: string; value: string };
 }
 
-function SignalCard({ title, value, position, capLabel, extraRow }: SignalCardProps) {
-  const clamped = Math.max(0, Math.min(1, position));
-  const percent = `${Math.round(clamped * 100)}%`;
+function SignalCard({ title, value, bar, capLabel, extraRow }: SignalCardProps) {
   return (
     <Card title={title}>
       <p className="m-0 text-3xl font-semibold text-slate-900">{value}</p>
       <p className="m-0 mt-1 text-xs text-slate-500">{capLabel}</p>
-      <div className="mt-4 h-2 w-full rounded-full bg-slate-200">
-        <div
-          className="h-2 rounded-full bg-brand-500"
-          style={{ width: percent }}
-          aria-hidden="true"
-        />
-      </div>
+      {bar !== undefined && <div className="mt-4">{bar}</div>}
       {extraRow !== undefined && (
         <p className="m-0 mt-3 text-sm text-slate-600">
           <span className="text-slate-500">{extraRow.label}:</span>{' '}
@@ -101,41 +128,35 @@ export function Breakdown() {
 
   const { metrics } = response;
   const resiliencePoints = sumDriverPoints(response.drivers);
-  const resilienceRange = RESILIENCE_MAX_POINTS - RESILIENCE_MIN_POINTS;
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <SignalCard
         title="Income Regularity"
-        value={`${Math.round(metrics.income_regularity * 100)}%`}
-        position={metrics.income_regularity}
+        value={formatPercent(metrics.income_regularity)}
+        bar={<ShareBar label="Income Regularity" fraction={metrics.income_regularity} />}
         capLabel={SIGNAL_CAP_LABELS.regularity}
       />
       <SignalCard
         title="Income Coverage Ratio"
         value={formatCoverageRatio(metrics.income_coverage_ratio)}
-        /*
-         * 2x or higher reads as "fully covered", so the bar is capped there;
-         * 1.4x then fills about two-thirds. A null ratio (the user has no
-         * essential expenses) leaves the bar empty.
-         */
-        position={
-          metrics.income_coverage_ratio === null
-            ? 0
-            : metrics.income_coverage_ratio / COVERAGE_BAR_FULL_AT
-        }
         capLabel={SIGNAL_CAP_LABELS.coverage}
       />
       <SignalCard
         title="Essential Payments Consistency"
-        value={`${Math.round(metrics.essential_payments_consistency * 100)}%`}
-        position={metrics.essential_payments_consistency}
+        value={formatPercent(metrics.essential_payments_consistency)}
+        bar={
+          <ShareBar
+            label="Essential Payments Consistency"
+            fraction={metrics.essential_payments_consistency}
+          />
+        }
         capLabel={SIGNAL_CAP_LABELS.essentials}
       />
       <SignalCard
         title="Resilience Adjustments"
         value={formatPoints(resiliencePoints)}
-        position={(resiliencePoints - RESILIENCE_MIN_POINTS) / resilienceRange}
+        bar={<ResilienceBar points={resiliencePoints} />}
         capLabel={SIGNAL_CAP_LABELS.resilience}
         extraRow={{
           label: 'Good months',
