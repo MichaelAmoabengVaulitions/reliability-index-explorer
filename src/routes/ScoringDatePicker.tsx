@@ -31,7 +31,7 @@ export function ScoringDatePicker() {
   }
 
   return (
-    <label className="flex flex-col gap-0.5 text-xs text-slate-500">
+    <label className="flex items-center gap-2 text-xs text-topbar-text">
       Scoring window ends
       <input
         type="date"
@@ -40,7 +40,7 @@ export function ScoringDatePicker() {
         max={todayAsIsoDate()}
         onChange={(event) => changeDate(event.target.value)}
         onBlur={() => setTypedDate(null)}
-        className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"
+        className="rounded-md border border-topbar-border bg-topbar-hover px-2 py-1 text-sm text-white [color-scheme:dark]"
       />
     </label>
   );

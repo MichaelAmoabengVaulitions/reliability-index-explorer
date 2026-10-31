@@ -5,11 +5,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { appRoutes } from './appRoutes';
 
-const sidebar = vi.hoisted(() => ({ crashes: false }));
+const topBar = vi.hoisted(() => ({ crashes: false }));
 
-vi.mock('./Sidebar', () => ({
-  Sidebar: () => {
-    if (sidebar.crashes) throw new Error('The sidebar broke');
+vi.mock('./TopBar', () => ({
+  TopBar: () => {
+    if (topBar.crashes) throw new Error('The top bar broke');
     return null;
   },
 }));
@@ -25,7 +25,7 @@ function renderAt(url: string) {
 }
 
 afterEach(() => {
-  sidebar.crashes = false;
+  topBar.crashes = false;
 });
 
 describe('appRoutes', () => {
@@ -50,11 +50,11 @@ describe('appRoutes', () => {
 
   it('shows a recovery message when the page frame crashes', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    sidebar.crashes = true;
+    topBar.crashes = true;
 
     renderAt('/');
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('The sidebar broke');
+    expect(await screen.findByRole('alert')).toHaveTextContent('The top bar broke');
     consoleError.mockRestore();
   });
 });

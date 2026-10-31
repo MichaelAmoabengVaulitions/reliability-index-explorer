@@ -1,3 +1,5 @@
+import { config } from '@/config';
+
 export type DriverKind = 'positive' | 'risk' | 'neutral';
 
 // Shown in place of a coverage ratio the backend could not work out.
@@ -107,6 +109,30 @@ export function parseDriver(raw: string): ParsedDriver {
     points,
     kind: points > 0 ? 'positive' : 'risk',
   };
+}
+
+// Bigger point values first, whichever their sign. Reasons with no points keep their order at the end.
+export function sortByImpact(drivers: readonly ParsedDriver[]): ParsedDriver[] {
+  return [...drivers].sort((a, b) => Math.abs(b.points ?? 0) - Math.abs(a.points ?? 0));
+}
+
+function countOfPoints(points: number): string {
+  return points === 1 ? '1 point' : `${points} points`;
+}
+
+// Says how far a score is from a band edge. A medium score has two edges, so it uses the nearer one.
+export function bandEdgeNote(score: number): string {
+  const { mediumBandMin, highBandMin } = config.scoring;
+  if (score === highBandMin) return 'Right on the High cutoff';
+  if (score === mediumBandMin) return 'Right on the Medium cutoff';
+  if (score > highBandMin) return `${countOfPoints(score - highBandMin)} above the High cutoff`;
+  if (score < mediumBandMin) return `${countOfPoints(mediumBandMin - score)} below Medium`;
+
+  const pointsToHigh = highBandMin - score;
+  const pointsAboveLow = score - mediumBandMin;
+  return pointsToHigh <= pointsAboveLow
+    ? `${countOfPoints(pointsToHigh)} below High`
+    : `${countOfPoints(pointsAboveLow)} above Low`;
 }
 
 export function sumDriverPoints(drivers: readonly string[]): number {

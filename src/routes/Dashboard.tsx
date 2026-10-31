@@ -5,6 +5,7 @@ import { Breakdown } from '@/features/breakdown/Breakdown';
 import { Cashflow } from '@/features/cashflow/Cashflow';
 import { Explanation } from '@/features/explanation/Explanation';
 import { Overview } from '@/features/overview/Overview';
+import { Verdict } from '@/features/overview/Verdict';
 import { Explorer } from '@/features/transactions/Explorer';
 import { ErrorBoundary } from '@/ui/ErrorBoundary';
 
@@ -23,21 +24,27 @@ export function Dashboard() {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="lg:col-span-1">
+        <ErrorBoundary resetKey={userId}>
+          <Verdict />
+        </ErrorBoundary>
+      </div>
+
+      <div className="lg:col-span-2">
+        <ErrorBoundary resetKey={userId}>
+          <Explanation />
+        </ErrorBoundary>
+      </div>
+
       <div className="lg:col-span-3">
         <ErrorBoundary resetKey={userId}>
           <Overview />
         </ErrorBoundary>
       </div>
 
-      <div className="lg:col-span-2">
+      <div className="lg:col-span-3">
         <ErrorBoundary resetKey={userId}>
           <Breakdown />
-        </ErrorBoundary>
-      </div>
-
-      <div className="lg:col-span-1">
-        <ErrorBoundary resetKey={userId}>
-          <Explanation />
         </ErrorBoundary>
       </div>
 

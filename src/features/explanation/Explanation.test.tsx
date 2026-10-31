@@ -27,6 +27,34 @@ describe('Explanation', () => {
     expect(screen.getByText('-1 pts')).toBeInTheDocument();
   });
 
+  it('is titled as the answer to why the score is what it is', async () => {
+    renderWithProviders(<Explanation />, SAMPLE_DASHBOARD_ROUTE);
+    expect(await screen.findByRole('heading', { name: 'Why this score' })).toBeInTheDocument();
+  });
+
+  it('lists the biggest point values first, then reasons with no points', async () => {
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json(
+        buildReliabilityResponse({
+          response: {
+            drivers: [
+              'Essential payments present but with some gaps',
+              '3 late fee event(s) detected (-3 pts)',
+              'Estimated 35 negative balance day(s) (-10 pts)',
+            ],
+          },
+        }),
+      ),
+    );
+    renderWithProviders(<Explanation />, SAMPLE_DASHBOARD_ROUTE);
+
+    const hurtingHeading = await screen.findByRole('heading', { name: "What's hurting" });
+    const rows = within(hurtingHeading.parentElement as HTMLElement).getAllByRole('listitem');
+    expect(rows[0]).toHaveTextContent('negative balance');
+    expect(rows[1]).toHaveTextContent('late fee');
+    expect(rows[2]).toHaveTextContent('some gaps');
+  });
+
   it('sorts drivers with no points by their wording', async () => {
     vi.mocked(fetch).mockImplementation(async () =>
       Response.json(

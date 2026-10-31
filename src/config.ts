@@ -42,8 +42,8 @@ export const config = {
   scoring: {
     /*
      * Score band ranges from the API specification: LOW 0-49, MEDIUM 50-74,
-     * HIGH 75-100. The score gauge uses these to colour its arc so the
-     * coloured zones line up with the band the backend reports.
+     * HIGH 75-100. The score scale uses these so its coloured zones line
+     * up with the band the backend reports.
      */
     mediumBandMin: 50,
     highBandMin: 75,

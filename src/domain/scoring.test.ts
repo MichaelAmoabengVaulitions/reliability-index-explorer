@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  bandEdgeNote,
   captionForDriver,
   formatCoverageRatio,
   formatPoints,
   parseDriver,
+  sortByImpact,
   sumDriverPoints,
 } from './scoring';
 
@@ -89,6 +91,68 @@ describe('parseDriver', () => {
     expect(result.kind).toBe('positive');
     expect(result.points).toBe(7);
     expect(result.label).toBe('Spaced suffix');
+  });
+});
+
+describe('bandEdgeNote', () => {
+  it.each([
+    [81, '6 points above the High cutoff'],
+    [76, '1 point above the High cutoff'],
+    [100, '25 points above the High cutoff'],
+  ])('describes a high score of %i', (score, note) => {
+    expect(bandEdgeNote(score)).toBe(note);
+  });
+
+  it.each([
+    [74, '1 point below High'],
+    [64, '11 points below High'],
+    [63, '12 points below High'],
+    [62, '12 points above Low'],
+    [61, '11 points above Low'],
+    [51, '1 point above Low'],
+  ])('uses the nearest edge for a medium score of %i', (score, note) => {
+    expect(bandEdgeNote(score)).toBe(note);
+  });
+
+  it.each([
+    [49, '1 point below Medium'],
+    [15, '35 points below Medium'],
+    [0, '50 points below Medium'],
+  ])('describes a low score of %i', (score, note) => {
+    expect(bandEdgeNote(score)).toBe(note);
+  });
+
+  it('says so when the score sits exactly on an edge', () => {
+    expect(bandEdgeNote(75)).toBe('Right on the High cutoff');
+    expect(bandEdgeNote(50)).toBe('Right on the Medium cutoff');
+  });
+});
+
+describe('sortByImpact', () => {
+  function labels(drivers: string[]): string[] {
+    return sortByImpact(drivers.map(parseDriver)).map((driver) => driver.label);
+  }
+
+  it('puts the biggest points first, whichever their sign', () => {
+    expect(labels(['Small (-1 pts)', 'Large (-10 pts)', 'Middle (+5 pts)'])).toEqual([
+      'Large',
+      'Middle',
+      'Small',
+    ]);
+  });
+
+  it('puts reasons with no points last, in their original order', () => {
+    expect(labels(['First note', 'Scored (+1 pts)', 'Second note'])).toEqual([
+      'Scored',
+      'First note',
+      'Second note',
+    ]);
+  });
+
+  it('does not change the list it is given', () => {
+    const drivers = ['Small (-1 pts)', 'Large (-10 pts)'].map(parseDriver);
+    sortByImpact(drivers);
+    expect(drivers[0]?.label).toBe('Small');
   });
 });
 

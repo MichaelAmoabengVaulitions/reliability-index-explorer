@@ -1,10 +1,18 @@
 import type { ReliabilityResponse } from '@/api/schemas';
 import { useDashboardParams } from '@/data/useDashboardParams';
 import { useReliability } from '@/data/useReliability';
-import { type ParsedDriver, captionForDriver, formatPoints, parseDriver } from '@/domain/scoring';
+import {
+  type ParsedDriver,
+  captionForDriver,
+  formatPoints,
+  parseDriver,
+  sortByImpact,
+} from '@/domain/scoring';
 import { Card } from '@/ui/Card';
 import { ErrorState } from '@/ui/ErrorState';
 import { Skeleton } from '@/ui/Skeleton';
+
+const CARD_TITLE = 'Why this score';
 
 /*
  * A short opening line for each band. The detail that makes an explanation
@@ -83,7 +91,7 @@ export function Explanation() {
 
   if (reliability.isLoading) {
     return (
-      <Card title="Score Explanation">
+      <Card title={CARD_TITLE} className="h-full">
         <Skeleton height="220px" />
       </Card>
     );
@@ -91,7 +99,7 @@ export function Explanation() {
 
   if (reliability.error !== null) {
     return (
-      <Card title="Score Explanation">
+      <Card title={CARD_TITLE} className="h-full">
         <ErrorState
           title="Could not load explanations"
           description={reliability.error.message}
@@ -104,22 +112,20 @@ export function Explanation() {
   const response = reliability.data;
   if (response === undefined) {
     return (
-      <Card title="Score Explanation">
+      <Card title={CARD_TITLE} className="h-full">
         <p className="text-sm text-slate-500">No explanation available.</p>
       </Card>
     );
   }
 
-  const parsed = response.drivers.map(parseDriver);
+  const parsed = sortByImpact(response.drivers.map(parseDriver));
   const helping = parsed.filter((driver) => driver.kind === 'positive');
   const hurting = parsed.filter((driver) => driver.kind === 'risk');
   const notes = parsed.filter((driver) => driver.kind === 'neutral');
 
   return (
-    <Card title="Score Explanation" ariaLabel="Score Explanation">
-      <p id="explanation" className="m-0 mb-4 text-sm text-slate-700">
-        {BAND_SUMMARY[response.score_band]}
-      </p>
+    <Card title={CARD_TITLE} className="h-full">
+      <p className="m-0 mb-4 text-sm text-slate-700">{BAND_SUMMARY[response.score_band]}</p>
       <div className="grid gap-6 sm:grid-cols-2">
         <Column
           title="What's helping"

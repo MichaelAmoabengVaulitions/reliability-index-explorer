@@ -2,8 +2,8 @@
  * The one place colour values are defined for the app.
  *
  * tailwind.config.ts feeds these into Tailwind, so styling classes like
- * text-band-low or bg-sidebar work. Code that needs a colour as a plain value
- * rather than a class (the SVG score gauge, the Recharts chart) imports this
+ * text-negative or bg-topbar work. Code that needs a colour as a plain value
+ * rather than a class (the Recharts chart) imports this
  * same object. No file should write a raw colour code anywhere else.
  */
 export const colors = {
@@ -18,13 +18,12 @@ export const colors = {
     700: '#3730a3',
   },
   // A deep navy, so the dashboard reads as an analyst tool rather than a marketing site.
-  sidebar: {
+  topbar: {
     DEFAULT: '#0f172a',
     hover: '#1e293b',
     border: '#1e293b',
     text: '#cbd5e1',
     muted: '#94a3b8',
-    active: '#4f46e5',
   },
   /*
    * Colours for good, middling and bad news. The plain shade is for text on
@@ -50,26 +49,17 @@ export const colors = {
     border: '#fca5a5',
     onDark: '#fca5a5',
   },
-  /*
-   * Bright colours for shapes only: the gauge arc and the chart bars. They are
-   * too light to read as text on white.
-   */
-  band: {
-    low: '#ef4444',
-    medium: '#f59e0b',
-    high: '#10b981',
-  },
-  // The same green and red as the score bands, so "green is good" reads the same everywhere.
+  // Bright colours for the chart bars. They are too light to read as text on white.
   money: {
     inflow: '#10b981',
     outflow: '#ef4444',
   },
   /*
-   * Colours used inside the SVG gauge and the Recharts chart, where a
+   * Colours used inside the Recharts chart, where a
    * colour must be a plain value rather than a Tailwind class.
    */
   chart: {
-    ink: '#0f172a', // the gauge needle and the net cashflow line
+    ink: '#0f172a', // the net cashflow line
     grid: '#e2e8f0', // chart gridlines and axis lines
     axis: '#64748b', // axis tick labels
   },
