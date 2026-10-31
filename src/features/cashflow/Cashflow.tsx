@@ -26,7 +26,7 @@ import { Skeleton } from '@/ui/Skeleton';
 import { aggregateCashflow } from './aggregateCashflow';
 
 const CHART_HEIGHT = 320;
-// Bar top radius (px) that gives the stacked bars a slightly rounded crown.
+// Rounds the top corners of the bars slightly.
 const BAR_TOP_RADIUS = 4;
 
 const CHART_COLORS = {
@@ -155,14 +155,12 @@ export function Cashflow() {
             <Bar
               dataKey="inflow"
               name="Inflow"
-              stackId="a"
               fill={CHART_COLORS.inflow}
               radius={[BAR_TOP_RADIUS, BAR_TOP_RADIUS, 0, 0]}
             />
             <Bar
               dataKey="outflow"
               name="Outflow"
-              stackId="a"
               fill={CHART_COLORS.outflow}
               radius={[BAR_TOP_RADIUS, BAR_TOP_RADIUS, 0, 0]}
             />

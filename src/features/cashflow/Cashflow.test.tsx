@@ -27,6 +27,23 @@ describe('Cashflow', () => {
     );
   });
 
+  it('draws money in and money out side by side, not stacked', async () => {
+    const { container } = renderWithProviders(<Cashflow />, SAMPLE_DASHBOARD_ROUTE);
+    await screen.findAllByText(/€/, undefined, { timeout: 4000 });
+
+    await waitFor(
+      () => {
+        expect(container.querySelector('path[name="Inflow"]')).toBeInTheDocument();
+        expect(container.querySelector('path[name="Outflow"]')).toBeInTheDocument();
+      },
+      { timeout: 4000 },
+    );
+
+    const inflowX = container.querySelector('path[name="Inflow"]')?.getAttribute('x');
+    const outflowX = container.querySelector('path[name="Outflow"]')?.getAttribute('x');
+    expect(inflowX).not.toBe(outflowX);
+  });
+
   it('shows the empty state when the window has no transactions', async () => {
     vi.mocked(fetch).mockImplementation(async (input) =>
       String(input).includes('/transactions')
