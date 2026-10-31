@@ -100,6 +100,27 @@ describe('applyTransactionFilters', () => {
     expect(result[1]?.id).toBe('tx_1');
   });
 
+  it('ignores spaces at the start and end of the search', () => {
+    const result = applyTransactionFilters(sample, { search: '  amaz ' });
+    expect(result.map((tx) => tx.id)).toEqual(['tx_1']);
+  });
+
+  it('treats a search of only spaces as no search', () => {
+    expect(applyTransactionFilters(sample, { search: '   ' })).toHaveLength(4);
+  });
+
+  it('keeps rows with the same value in the same order, whatever order they arrive in', () => {
+    const first = buildTransaction({ id: 'tx_a', date: '2026-01-01' });
+    const second = buildTransaction({ id: 'tx_b', date: '2026-01-01' });
+    const sort = { field: 'date', direction: 'desc' } as const;
+
+    const forwards = applyTransactionFilters([first, second], { sort });
+    const backwards = applyTransactionFilters([second, first], { sort });
+
+    expect(forwards.map((tx) => tx.id)).toEqual(['tx_a', 'tx_b']);
+    expect(backwards.map((tx) => tx.id)).toEqual(['tx_a', 'tx_b']);
+  });
+
   it('does not mutate the input array', () => {
     const original = [...sample];
     applyTransactionFilters(sample, { sort: { field: 'amount', direction: 'desc' } });

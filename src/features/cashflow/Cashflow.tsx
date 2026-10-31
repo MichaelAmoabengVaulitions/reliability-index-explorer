@@ -13,6 +13,7 @@ import {
 
 import { fromState } from '@/data/transactionState';
 import { useDashboardParams } from '@/data/useDashboardParams';
+import { useReliability } from '@/data/useReliability';
 import { useTransactions } from '@/data/useTransactions';
 import { windowFor } from '@/domain/dates';
 import { formatMoney } from '@/domain/money';
@@ -82,15 +83,17 @@ export function Cashflow() {
   const { userId, from } = useDashboardParams();
   const scoringWindow = windowFor(from);
   const transactions = useTransactions(userId, scoringWindow.start, scoringWindow.end);
+  const reliability = useReliability(userId, from);
 
-  const series = useMemo(() => {
-    if (transactions.data === undefined) return [];
-    const list = fromState(transactions.data.state);
-    return aggregateCashflow(list, {
-      from: scoringWindow.start,
-      to: scoringWindow.end,
-    });
-  }, [transactions.data, scoringWindow.start, scoringWindow.end]);
+  const list = useMemo(
+    () => (transactions.data === undefined ? [] : fromState(transactions.data.state)),
+    [transactions.data],
+  );
+
+  const series = useMemo(
+    () => aggregateCashflow(list, { from: scoringWindow.start, to: scoringWindow.end }),
+    [list, scoringWindow.start, scoringWindow.end],
+  );
 
   if (transactions.isLoading) {
     return (
@@ -112,7 +115,11 @@ export function Cashflow() {
     );
   }
 
-  if (series.length === 0) {
+  // The score may still be loading, so a transaction's currency stands in until it arrives.
+  const currency = reliability.data?.currency ?? list[0]?.currency;
+  const hasCashflow = series.some((month) => month.inflow > 0 || month.outflow > 0);
+
+  if (!hasCashflow || currency === undefined) {
     return (
       <Card title="Monthly Cashflow">
         <EmptyState
@@ -123,10 +130,6 @@ export function Cashflow() {
       </Card>
     );
   }
-
-  // Take the currency from any transaction; the API uses one currency per user.
-  const list = transactions.data === undefined ? [] : fromState(transactions.data.state);
-  const currency = list[0]?.currency ?? 'EUR';
 
   return (
     <Card title="Monthly Cashflow">

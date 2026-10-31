@@ -101,10 +101,3 @@ export function writeFilters(
   setOrRemove(nextParams, 'sort', sort === formatSort(DEFAULT_FILTERS.sort) ? '' : sort);
   return nextParams;
 }
-
-// Categories and searches belong to one person's transactions, so only the date carries over.
-export function paramsForNewUser(params: URLSearchParams): URLSearchParams {
-  const nextParams = new URLSearchParams();
-  setOrRemove(nextParams, 'from', params.get('from') ?? '');
-  return nextParams;
-}

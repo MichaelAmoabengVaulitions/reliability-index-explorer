@@ -34,6 +34,7 @@ export function VirtualTable({ transactions }: VirtualTableProps) {
     getScrollElement: () => parentRef.current,
     estimateSize: () => rowHeight,
     overscan: config.ui.virtualOverscan,
+    getItemKey: (index) => transactions[index]?.id ?? index,
   });
 
   return (

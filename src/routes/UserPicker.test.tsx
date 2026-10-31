@@ -2,6 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
+import { fakeBackend } from '@/test-utils/fakeBackend';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';
 
 import { UserPicker } from './UserPicker';
@@ -29,7 +30,21 @@ describe('UserPicker', () => {
     });
   });
 
-  it('opens the picked user, keeping the date and dropping the filters', async () => {
+  it('offers a retry when the user list fails, and shows the list once it loads', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ error: 'boom' }, { status: 500 }),
+    );
+    renderWithProviders(<UserPicker />);
+    const retryButton = await screen.findByRole('button', { name: 'Try again' });
+
+    vi.mocked(fetch).mockImplementation(fakeBackend);
+    await user.click(retryButton);
+
+    expect(await screen.findByRole('option', { name: 'user_1001' })).toBeInTheDocument();
+  });
+
+  it('opens the picked user with a fresh window and no filters', async () => {
     const user = userEvent.setup();
     const { router } = renderWithProviders(<UserPicker />, {
       path: '*',
@@ -41,6 +56,6 @@ describe('UserPicker', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/users/user_1001');
     });
-    expect(router.state.location.search).toBe('?from=2026-02-28');
+    expect(router.state.location.search).toBe('');
   });
 });

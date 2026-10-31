@@ -1,25 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 
 import { discoveryQuery } from '@/data/queries';
-import { paramsForNewUser } from '@/domain/dashboardParams';
 
 /**
  * Dropdown that lists every user id the backend's discovery endpoint
- * reports. Picking one takes the visitor to that user's dashboard.
+ * reports. Picking one takes the visitor to that user's dashboard, with the
+ * default window and no filters, because each user starts fresh.
  */
 export function UserPicker() {
   const navigate = useNavigate();
   const { userId: currentUserId } = useParams<{ userId: string }>();
-  const [searchParams] = useSearchParams();
-  const { data, isLoading, error } = useQuery(discoveryQuery);
+  const { data, isLoading, error, refetch } = useQuery(discoveryQuery);
 
   function openUser(userId: string) {
-    void navigate({
-      pathname: `/users/${encodeURIComponent(userId)}`,
-      search: paramsForNewUser(searchParams).toString(),
-    });
+    void navigate(`/users/${encodeURIComponent(userId)}`);
   }
 
   if (isLoading) {
@@ -27,9 +23,19 @@ export function UserPicker() {
   }
   if (error !== null) {
     return (
-      <p role="alert" className="px-3 text-sm text-red-300">
+      <div
+        role="alert"
+        className="flex items-center justify-between gap-2 px-3 text-sm text-red-300"
+      >
         Could not load users
-      </p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="rounded underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+        >
+          Try again
+        </button>
+      </div>
     );
   }
 

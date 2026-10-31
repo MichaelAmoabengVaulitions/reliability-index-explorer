@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_FILTERS,
   isSelectableDate,
-  paramsForNewUser,
   readFilters,
   readFrom,
   writeFilters,
@@ -162,16 +161,5 @@ describe('writeFilters', () => {
       sort: { field: 'merchant_name' as const, direction: 'desc' as const },
     };
     expect(readFilters(writeFilters(paramsFrom(''), filters))).toEqual(filters);
-  });
-});
-
-describe('paramsForNewUser', () => {
-  it('keeps the date and drops the filters', () => {
-    const params = paramsForNewUser(paramsFrom('from=2026-02-28&sign=inflow&search=Amazon'));
-    expect(params.toString()).toBe('from=2026-02-28');
-  });
-
-  it('is empty when the URL has no date', () => {
-    expect(paramsForNewUser(paramsFrom('sign=inflow')).toString()).toBe('');
   });
 });

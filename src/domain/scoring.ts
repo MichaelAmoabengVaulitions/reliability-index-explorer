@@ -59,11 +59,11 @@ export interface ParsedDriver {
 }
 
 /*
- * This pattern finds a points value like "(+5 pts)" or "(-10 pts)" at the
- * very end of a driver string. It only matches at the end, so a "(+5 pts)"
- * in the middle of a sentence is left alone.
+ * This pattern finds a points value like "(+5 pts)", "(-10 pts)" or
+ * "(+2.5 pts)" at the very end of a driver string. It only matches at the end,
+ * so a "(+5 pts)" in the middle of a sentence is left alone.
  */
-const POINTS_SUFFIX = /\s*\(([+-]?\d+)\s*pts\)\s*$/;
+const POINTS_SUFFIX = /\s*\(([+-]?\d+(?:\.\d+)?)\s*pts\)\s*$/;
 
 const HELPING_WORDING = /strong income coverage|income covers essential|detected consistently/i;
 const HURTING_WORDING = /inconsistent|some gaps|no income/i;

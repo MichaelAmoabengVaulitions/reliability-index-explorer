@@ -31,8 +31,8 @@ export function applyTransactionFilters(
     result = result.filter((tx) => codes.has(tx.merchant_category_code));
   }
 
-  if (filters.search !== undefined && filters.search.length > 0) {
-    const needle = filters.search.toLowerCase();
+  const needle = filters.search?.trim().toLowerCase() ?? '';
+  if (needle.length > 0) {
     result = result.filter((tx) => tx.merchant_name.toLowerCase().includes(needle));
   }
 
@@ -53,7 +53,13 @@ export function applyTransactionFilters(
   return result;
 }
 
+// Rows with the same value fall back to their id, so their order never jumps around.
 function compareBy(sort: TransactionSort): (a: Transaction, b: Transaction) => number {
+  const compareField = fieldComparator(sort);
+  return (a, b) => compareField(a, b) || a.id.localeCompare(b.id);
+}
+
+function fieldComparator(sort: TransactionSort): (a: Transaction, b: Transaction) => number {
   const directionMultiplier = sort.direction === 'asc' ? 1 : -1;
   if (sort.field === 'amount') {
     return (a, b) => (a.amount - b.amount) * directionMultiplier;

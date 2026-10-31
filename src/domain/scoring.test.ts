@@ -77,6 +77,13 @@ describe('parseDriver', () => {
     expect(result.points).toBeUndefined();
   });
 
+  it('reads decimal points', () => {
+    const result = parseDriver('Savings behavior detected (+2.5 pts)');
+    expect(result.points).toBe(2.5);
+    expect(result.label).toBe('Savings behavior detected');
+    expect(parseDriver('Late fees (-0.5 pts)').kind).toBe('risk');
+  });
+
   it('tolerates extra whitespace before the suffix', () => {
     const result = parseDriver('Spaced suffix   (+7 pts)');
     expect(result.kind).toBe('positive');
