@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { config } from '@/config';
+import { buildTransaction } from '@/test-utils/fixtures/transactions';
 
 import {
   ApiError,
@@ -10,7 +13,92 @@ import {
   fetchReliability,
   fetchTransactionPage,
   transactionEventsUrl,
+  trimTrailingSlashes,
 } from './client';
+
+function fetchedUrl(): string {
+  return String(vi.mocked(fetch).mock.calls[0]?.[0]);
+}
+
+// A request that never answers, and fails the way fetch does when it is aborted.
+function fetchThatHangs(): void {
+  vi.mocked(fetch).mockImplementation(
+    (_input, init) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          reject(new DOMException('Aborted', 'AbortError'));
+        });
+      }),
+  );
+}
+
+describe('requests', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('gives up on a hung request with a clear error', async () => {
+    vi.useFakeTimers();
+    fetchThatHangs();
+
+    const result = fetchReliability('user_1001', '2026-02-20').catch((error: unknown) => error);
+    await vi.advanceTimersByTimeAsync(config.api.requestTimeoutMs);
+
+    const error = await result;
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 0, message: 'The request timed out.' });
+  });
+
+  it('keeps a cancel as a cancel, not an error', async () => {
+    fetchThatHangs();
+    const controller = new AbortController();
+
+    const result = fetchReliability('user_1001', '2026-02-20', controller.signal);
+    controller.abort();
+
+    await expect(result).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('does not start a request that is already cancelled', async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      fetchReliability('user_1001', '2026-02-20', controller.signal),
+    ).rejects.toBeDefined();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('turns a success response that is not JSON into an ApiError', async () => {
+    vi.mocked(fetch).mockImplementation(async () => new Response('<html>Oops</html>'));
+
+    await expect(fetchReliability('user_1001', '2026-02-20')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 200,
+    });
+  });
+
+  it('encodes the user id in the reliability path', async () => {
+    await fetchReliability('user/1', '2026-02-20');
+    expect(fetchedUrl()).toContain('/api/users/user%2F1/reliability');
+  });
+
+  it('encodes the user id in the transactions path', async () => {
+    await fetchTransactionPage({ userId: 'user/1', from: '2025-09-01', to: '2026-02-20' });
+    expect(fetchedUrl()).toContain('/api/users/user%2F1/transactions');
+  });
+});
+
+describe('trimTrailingSlashes', () => {
+  it('removes slashes from the end of a URL', () => {
+    expect(trimTrailingSlashes('https://host.example/')).toBe('https://host.example');
+    expect(trimTrailingSlashes('https://host.example//')).toBe('https://host.example');
+  });
+
+  it('leaves a URL with no trailing slash alone', () => {
+    expect(trimTrailingSlashes('https://host.example')).toBe('https://host.example');
+  });
+});
 
 describe('fetchReliability', () => {
   it('resolves with a parsed reliability response on success', async () => {
@@ -91,6 +179,44 @@ describe('fetchAllTransactions', () => {
     const all = await fetchAllTransactions(window);
     expect(all).toHaveLength(2000);
     expect(new Set(all.map((tx) => tx.id)).size).toBe(2000);
+  });
+
+  it('stops asking for pages once the caller cancels', async () => {
+    const controller = new AbortController();
+    vi.mocked(fetch).mockImplementation(async () => {
+      controller.abort();
+      return Response.json({
+        transactions: [buildTransaction()],
+        total: 9,
+        page: 1,
+        limit: 500,
+        has_more: true,
+      });
+    });
+
+    await expect(
+      fetchAllTransactions({ ...window, signal: controller.signal }),
+    ).rejects.toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips a malformed transaction and keeps the rest of the page', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({
+        transactions: [buildTransaction({ id: 'tx_good' }), { id: 'tx_bad' }],
+        total: 2,
+        page: 1,
+        limit: 500,
+        has_more: false,
+      }),
+    );
+
+    const all = await fetchAllTransactions(window);
+
+    expect(all.map((transaction) => transaction.id)).toEqual(['tx_good']);
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
   });
 
   it('rejects when any page fails', async () => {

@@ -30,7 +30,6 @@ const STREAM_BADGE_BY_STATUS: Record<StreamStatus, { dot: string; text: string; 
     label: 'Connecting to live updates',
   },
   open: { dot: 'bg-emerald-500 animate-pulse', text: 'text-emerald-600', label: 'Live' },
-  closed: { dot: 'bg-red-400', text: 'text-red-600', label: 'Live updates disconnected' },
 };
 
 function LiveBadge({ status }: { status: StreamStatus }) {

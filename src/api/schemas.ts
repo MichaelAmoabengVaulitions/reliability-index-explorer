@@ -42,13 +42,23 @@ export const reliabilityResponseSchema = z.looseObject({
   drivers: z.array(z.string()),
 });
 
+// One bad row shouldn't stop the analyst seeing the rest, so it is logged and left out.
+function keepValidTransactions(rows: unknown[]) {
+  return rows.flatMap((row) => {
+    const parsed = transactionSchema.safeParse(row);
+    if (parsed.success) return [parsed.data];
+    console.warn('Skipping a transaction that did not match the expected shape.', parsed.error);
+    return [];
+  });
+}
+
 /*
  * The form the live backend returns transactions in today. total_pages is
  * optional because the real server does not always include it; we go by
  * has_more instead, so a missing total_pages does not break anything.
  */
 export const offsetPaginatedSchema = z.looseObject({
-  transactions: z.array(transactionSchema),
+  transactions: z.array(z.unknown()).transform(keepValidTransactions),
   total: z.number().int(),
   page: z.number().int(),
   limit: z.number().int(),
