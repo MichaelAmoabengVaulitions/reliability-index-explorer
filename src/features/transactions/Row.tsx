@@ -11,12 +11,17 @@ interface RowProps {
  *
  * Money coming in shows in green with a leading "+", money going out in red
  * with a leading "−". The sign is shown as well as the colour on purpose:
- * colour on its own is not a reliable signal for colour-blind visitors.
+ * colour on its own is not a reliable signal for colour-blind visitors. A zero
+ * amount is neither, so it gets no sign and no colour.
  */
+function amountStyle(amount: number): { sign: string; className: string } {
+  if (amount > 0) return { sign: '+ ', className: 'text-money-inflow' };
+  if (amount < 0) return { sign: '− ', className: 'text-money-outflow' };
+  return { sign: '', className: 'text-slate-600' };
+}
+
 export function Row({ transaction, height }: RowProps) {
-  const isInflow = transaction.amount > 0;
-  const amountClass = isInflow ? 'text-money-inflow' : 'text-money-outflow';
-  const signLabel = isInflow ? '+' : '−';
+  const { sign, className } = amountStyle(transaction.amount);
   const absAmount = Math.abs(transaction.amount);
 
   return (
@@ -29,8 +34,9 @@ export function Row({ transaction, height }: RowProps) {
         <p className="m-0 truncate font-medium text-slate-900">{transaction.merchant_name}</p>
         <p className="m-0 truncate text-xs text-slate-500">{transaction.description}</p>
       </div>
-      <span className={`text-right font-semibold tabular-nums ${amountClass}`}>
-        {signLabel} {formatMoney(absAmount, transaction.currency)}
+      <span className={`text-right font-semibold tabular-nums ${className}`}>
+        {sign}
+        {formatMoney(absAmount, transaction.currency)}
       </span>
     </div>
   );

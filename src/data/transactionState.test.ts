@@ -8,6 +8,7 @@ import {
   applyTransactionEvents,
   fitEventToWindow,
   fromState,
+  onlyChangingEvents,
   onlyNewEvents,
   toState,
 } from './transactionState';
@@ -193,6 +194,45 @@ describe('fitEventToWindow', () => {
   it('drops an add or update with no transaction', () => {
     expect(fitEventToWindow({ type: 'TRANSACTION_ADDED' }, from, to)).toBeUndefined();
     expect(fitEventToWindow({ type: 'TRANSACTION_UPDATED' }, from, to)).toBeUndefined();
+  });
+});
+
+describe('onlyChangingEvents', () => {
+  const added = { id: '1', event: { type: 'TRANSACTION_ADDED', transaction: txTwo } } as const;
+  const deleted = {
+    id: '2',
+    event: { type: 'TRANSACTION_DELETED', transaction_id: 'tx_2' },
+  } as const;
+
+  it('keeps an add and an update', () => {
+    const updated = {
+      id: '3',
+      event: { type: 'TRANSACTION_UPDATED', transaction: txOne },
+    } as const;
+    expect(onlyChangingEvents(toState([txOne]), [added, updated])).toEqual([added, updated]);
+  });
+
+  it('keeps a delete of a row we have', () => {
+    expect(onlyChangingEvents(toState([txTwo]), [deleted])).toEqual([deleted]);
+  });
+
+  it('drops a delete of a row we do not have', () => {
+    expect(onlyChangingEvents(toState([txOne]), [deleted])).toEqual([]);
+  });
+
+  it('keeps a delete of a row added earlier in the same batch', () => {
+    expect(onlyChangingEvents(toState([]), [added, deleted])).toEqual([added, deleted]);
+  });
+
+  it('drops a delete that follows another delete of the same row', () => {
+    const repeat = { ...deleted, id: '3' };
+    expect(onlyChangingEvents(toState([txTwo]), [deleted, repeat])).toEqual([deleted]);
+  });
+
+  it('drops an event with nothing in it', () => {
+    const empty = { id: '4', event: { type: 'TRANSACTION_ADDED' } } as const;
+    const noId = { id: '5', event: { type: 'TRANSACTION_DELETED' } } as const;
+    expect(onlyChangingEvents(toState([txOne]), [empty, noId])).toEqual([]);
   });
 });
 

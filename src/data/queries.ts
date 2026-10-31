@@ -44,7 +44,7 @@ export const merchantCategoriesQuery = queryOptions({
 export function reliabilityQuery(userId: string, from: string) {
   return queryOptions({
     queryKey: queryKeys.reliability(userId, from),
-    queryFn: () => fetchReliability(userId, from),
+    queryFn: ({ signal }) => fetchReliability(userId, from, signal),
   });
 }
 
@@ -52,8 +52,8 @@ export function transactionsQuery(userId: string, from: string, to: string) {
   const queryKey = queryKeys.transactions(userId, from, to);
   return queryOptions({
     queryKey,
-    queryFn: async ({ client }): Promise<TransactionsQueryData> => {
-      const transactions = await fetchAllTransactions({ userId, from, to });
+    queryFn: async ({ client, signal }): Promise<TransactionsQueryData> => {
+      const transactions = await fetchAllTransactions({ userId, from, to, signal });
       const liveEvents = client.getQueryData<TransactionsQueryData>(queryKey)?.liveEvents ?? [];
       const state = applyTransactionEvents(
         toState(transactions),

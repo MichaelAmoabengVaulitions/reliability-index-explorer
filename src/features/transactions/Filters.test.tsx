@@ -92,6 +92,49 @@ describe('Filters', () => {
     expect(screen.getAllByText('6011')).toHaveLength(2);
   });
 
+  it('lets the analyst untick a selected category that is not in the current data', async () => {
+    const user = userEvent.setup();
+    const { router } = renderWithProviders(<Filters availableCategoryCodes={['5411']} />, {
+      initialEntries: ['/?categories=6011'],
+    });
+
+    await user.click(screen.getByText('Categories (1)'));
+    await user.click(screen.getByRole('checkbox', { name: /ATM Withdrawals|6011/ }));
+
+    await waitFor(() => {
+      expect(urlParam(router.state.location.search, 'categories')).toBeNull();
+    });
+  });
+
+  describe('closing the Categories dropdown', () => {
+    async function openDropdown() {
+      const user = userEvent.setup();
+      renderWithProviders(<Filters availableCategoryCodes={['5411']} />);
+      await user.click(screen.getByText('Categories'));
+      const dropdown = screen.getByText('Categories').closest('details');
+      expect(dropdown).toHaveAttribute('open');
+      return { user, dropdown };
+    }
+
+    it('closes on a click outside', async () => {
+      const { user, dropdown } = await openDropdown();
+      await user.click(document.body);
+      expect(dropdown).not.toHaveAttribute('open');
+    });
+
+    it('closes on Escape', async () => {
+      const { user, dropdown } = await openDropdown();
+      await user.keyboard('{Escape}');
+      expect(dropdown).not.toHaveAttribute('open');
+    });
+
+    it('stays open when a category inside it is ticked', async () => {
+      const { user, dropdown } = await openDropdown();
+      await user.click(screen.getByRole('checkbox'));
+      expect(dropdown).toHaveAttribute('open');
+    });
+  });
+
   it('puts the sort choice into the URL', async () => {
     const user = userEvent.setup();
     const { router } = renderWithProviders(<Filters availableCategoryCodes={[]} />);

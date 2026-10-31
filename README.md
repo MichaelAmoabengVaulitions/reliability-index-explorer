@@ -178,7 +178,7 @@ request fails, and an empty state if there is genuinely nothing to show.
 
 ## Testing
 
-There are 297 tests. They run with `yarn test`.
+There are 346 tests. They run with `yarn test`.
 
 For the helper functions (the API client, the date and money and scoring
 helpers, the functions that prepare the data) the test was written before the
@@ -241,6 +241,9 @@ The score is fetched again a couple of seconds after the last update.
 - **The scoring window has limits.** The date picker runs from 2026-02-28,
   the first month-end with six full months of data, up to today. A date
   outside that range in the URL falls back to today.
+- **A malformed transaction is skipped.** One bad row doesn't stop the rest
+  loading. It's logged to the console, and nothing on screen says a row is
+  missing.
 - **Only Resilience Adjustments shows earned points.** The API gives points
   for the resilience lines but not for income regularity, income coverage or
   essential payments, so those cards show their value and range. The frontend
@@ -349,8 +352,9 @@ disagree with each other.
 Keeping the screen calm when updates arrive fast is a matter of batching, as
 noted above. Because each update is safe to apply more than once, a
 reconnection that replays missed updates is safe. A visible indicator shows
-whether the live connection is currently open, connecting, or down, so the
-analyst knows whether they are looking at fresh data.
+whether the live connection is open or still connecting, so the analyst knows
+whether they are looking at fresh data. If the browser gives up on the stream,
+the app reconnects by itself, waiting a little longer each time.
 
 ### Caching and performance
 

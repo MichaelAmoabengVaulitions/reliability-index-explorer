@@ -49,6 +49,28 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
   const { categoryCodes, sign, search, sort } = filters;
   const { data: merchantCategories } = useQuery(merchantCategoriesQuery);
 
+  const categoryDropdown = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    function closeDropdown() {
+      if (categoryDropdown.current !== null) categoryDropdown.current.open = false;
+    }
+    function closeOnOutsideClick(event: MouseEvent) {
+      const clickedInside = categoryDropdown.current?.contains(event.target as Node);
+      if (clickedInside !== true) closeDropdown();
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') closeDropdown();
+    }
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, []);
+
   const [searchDraft, setSearchDraft] = useState(search);
 
   /*
@@ -84,6 +106,9 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
   }
 
   const currentSortValue = `${sort.field}:${sort.direction}` as const;
+
+  // A selected code may not be in this window's data, and it still has to be untickable.
+  const listedCategoryCodes = [...new Set([...availableCategoryCodes, ...categoryCodes])].sort();
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -124,15 +149,15 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
         ))}
       </div>
 
-      <details className="relative">
+      <details ref={categoryDropdown} className="relative">
         <summary className="cursor-pointer list-none rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
           Categories{categoryCodes.length > 0 ? ` (${categoryCodes.length})` : ''}
         </summary>
         <div className="absolute left-0 z-10 mt-1 max-h-60 w-56 overflow-auto rounded-md border border-slate-200 bg-white p-2 shadow-lg">
-          {availableCategoryCodes.length === 0 ? (
+          {listedCategoryCodes.length === 0 ? (
             <p className="m-0 px-2 py-1 text-xs text-slate-500">No categories in this window.</p>
           ) : (
-            availableCategoryCodes.map((code) => (
+            listedCategoryCodes.map((code) => (
               <label
                 key={code}
                 className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-slate-700 hover:bg-slate-50"
