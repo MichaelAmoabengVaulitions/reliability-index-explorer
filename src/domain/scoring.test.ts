@@ -6,9 +6,40 @@ import {
   formatCoverageRatio,
   formatPoints,
   parseDriver,
+  resilienceBarSpan,
   sortByImpact,
   sumDriverPoints,
 } from './scoring';
+
+describe('resilienceBarSpan', () => {
+  // The scale runs from -20 to +25, so zero sits 20/45 of the way along.
+  it('runs to the right of zero for positive points', () => {
+    const span = resilienceBarSpan(11);
+    expect(span.leftPercent).toBeCloseTo(44.44, 1);
+    expect(span.widthPercent).toBeCloseTo(24.44, 1);
+  });
+
+  it('runs to the left of zero for negative points, ending at zero', () => {
+    const span = resilienceBarSpan(-16);
+    expect(span.leftPercent).toBeCloseTo(8.89, 1);
+    expect(span.leftPercent + span.widthPercent).toBeCloseTo(44.44, 1);
+  });
+
+  it('has no width at zero points', () => {
+    expect(resilienceBarSpan(0).widthPercent).toBe(0);
+  });
+
+  it('reaches each end of the scale', () => {
+    expect(resilienceBarSpan(-20).leftPercent).toBe(0);
+    const top = resilienceBarSpan(25);
+    expect(top.leftPercent + top.widthPercent).toBeCloseTo(100);
+  });
+
+  it('stays on the scale if the points go past either end', () => {
+    expect(resilienceBarSpan(40)).toEqual(resilienceBarSpan(25));
+    expect(resilienceBarSpan(-30)).toEqual(resilienceBarSpan(-20));
+  });
+});
 
 describe('parseDriver', () => {
   it('keeps the wording as it is when there are no points', () => {

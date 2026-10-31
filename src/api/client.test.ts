@@ -122,6 +122,32 @@ describe('fetchReliability', () => {
     }
   });
 
+  it('shows the message the gateway sends when the service is down', async () => {
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ message: 'Service Unavailable' }, { status: 503 }),
+    );
+    await expect(fetchReliability('user_1001', '2026-02-20')).rejects.toMatchObject({
+      status: 503,
+      message: 'Service Unavailable',
+    });
+  });
+
+  it('prefers the error field when a response has both', async () => {
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ error: 'User not found', message: 'Not Found' }, { status: 404 }),
+    );
+    await expect(fetchReliability('user_1001', '2026-02-20')).rejects.toMatchObject({
+      message: 'User not found',
+    });
+  });
+
+  it('falls back to a plain message when the response has neither', async () => {
+    vi.mocked(fetch).mockImplementation(async () => Response.json({}, { status: 500 }));
+    await expect(fetchReliability('user_1001', '2026-02-20')).rejects.toMatchObject({
+      message: 'Request failed',
+    });
+  });
+
   it('throws ValidationError when the response is missing required fields', async () => {
     vi.mocked(fetch).mockImplementation(async () => Response.json({}));
     expect.assertions(2);
