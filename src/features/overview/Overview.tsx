@@ -12,9 +12,9 @@ import { ScoreGauge } from './ScoreGauge';
 const DRIVERS_PREVIEW_COUNT = 3;
 
 const BAND_STYLES = {
-  LOW: { chip: 'bg-red-100 text-red-800', label: 'Limited reliability' },
-  MEDIUM: { chip: 'bg-amber-100 text-amber-900', label: 'Moderate reliability' },
-  HIGH: { chip: 'bg-emerald-100 text-emerald-800', label: 'Strong reliability' },
+  LOW: { chip: 'bg-negative-soft text-negative-strong', label: 'Limited reliability' },
+  MEDIUM: { chip: 'bg-warning-soft text-warning-strong', label: 'Moderate reliability' },
+  HIGH: { chip: 'bg-positive-soft text-positive-strong', label: 'Strong reliability' },
 } as const;
 
 /*

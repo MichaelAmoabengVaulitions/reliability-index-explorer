@@ -123,7 +123,7 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
           value={searchDraft}
           onChange={(event) => setSearchDraft(event.target.value)}
           placeholder="Search merchant…"
-          className="block w-56 rounded-md border border-slate-300 bg-white py-1.5 pl-8 pr-3 text-sm placeholder:text-slate-400 focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+          className="block w-56 rounded-md border border-slate-300 bg-white py-1.5 pl-8 pr-3 text-sm placeholder:text-slate-500"
         />
       </label>
 
@@ -166,10 +166,10 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
                   type="checkbox"
                   checked={categoryCodes.includes(code)}
                   onChange={() => toggleCategory(code)}
-                  className="rounded border-slate-300 text-brand-500 focus:ring-brand-500"
+                  className="rounded border-slate-300 text-brand-500"
                 />
                 <span className="flex-1">{categoryLabel(code, merchantCategories)}</span>
-                <span className="text-xs text-slate-400">{code}</span>
+                <span className="text-xs text-slate-500">{code}</span>
               </label>
             ))
           )}
@@ -186,7 +186,7 @@ export function Filters({ availableCategoryCodes }: FiltersProps) {
               updateFilters({ sort: { field: next.field, direction: next.direction } });
             }
           }}
-          className="rounded-md border border-slate-300 bg-white py-1.5 pl-2 pr-7 text-sm focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+          className="rounded-md border border-slate-300 bg-white py-1.5 pl-2 pr-7 text-sm"
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>

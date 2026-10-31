@@ -21,15 +21,17 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="flex flex-col items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-900"
+      className="flex flex-col items-start gap-3 rounded-lg border border-negative-border bg-negative-faint p-4 text-negative-strong"
     >
       <p className="m-0 text-base font-semibold">{title}</p>
-      {description !== undefined && <p className="m-0 text-sm text-red-800">{description}</p>}
+      {description !== undefined && (
+        <p className="m-0 text-sm text-negative-strong">{description}</p>
+      )}
       {onRetry !== undefined && (
         <button
           type="button"
           onClick={onRetry}
-          className="self-start rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+          className="self-start rounded-md border border-negative-border bg-white px-3 py-1.5 text-sm font-medium text-negative-strong hover:bg-negative-soft"
         >
           {retryLabel}
         </button>

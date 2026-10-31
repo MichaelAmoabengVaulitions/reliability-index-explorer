@@ -11,7 +11,7 @@
   body {
     @apply bg-slate-50 text-slate-900 antialiased;
     font-family:
-      'Inter',
+      'Inter Variable',
       system-ui,
       -apple-system,
       Segoe UI,
@@ -19,5 +19,24 @@
       Helvetica,
       Arial,
       sans-serif;
+  }
+
+  /*
+   * The one focus style for every control. The forms plugin sets its own ring
+   * on inputs and selects, so those are named here too in order to replace it.
+   */
+  :focus-visible,
+  [type]:focus-visible,
+  select:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-brand-500;
+  }
+  [type]:focus,
+  select:focus {
+    @apply border-brand-500;
+    box-shadow: none;
+  }
+  aside :focus-visible,
+  aside select:focus-visible {
+    @apply outline-white;
   }
 }

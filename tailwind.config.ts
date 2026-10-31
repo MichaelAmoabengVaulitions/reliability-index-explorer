@@ -12,8 +12,9 @@ const config: Config = {
       colors: {
         brand: colors.brand,
         sidebar: colors.sidebar,
-        band: colors.band,
-        money: colors.money,
+        positive: colors.positive,
+        warning: colors.warning,
+        negative: colors.negative,
       },
       fontSize: {
         // The score number in the gauge. Large enough to be the visual anchor.

@@ -21,8 +21,8 @@ interface DriverRowProps {
 }
 
 function pointsChipClasses(driver: ParsedDriver): string {
-  if (driver.kind === 'positive') return 'bg-emerald-100 text-emerald-800';
-  if (driver.kind === 'risk') return 'bg-red-100 text-red-800';
+  if (driver.kind === 'positive') return 'bg-positive-soft text-positive-strong';
+  if (driver.kind === 'risk') return 'bg-negative-soft text-negative-strong';
   return 'bg-slate-100 text-slate-700';
 }
 
