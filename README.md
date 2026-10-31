@@ -11,17 +11,17 @@ behaves the way it should.
 
 ## What the app does
 
-Pick a user from the sidebar and the dashboard shows five things about them.
+Pick a user from the top bar and the dashboard shows these things about them.
 
-1. **Reliability Overview.** The headline score on a gauge, the score band
-   (low, medium or high), the date range the score covers, six key numbers,
-   and the top reasons behind the score.
-2. **Score Breakdown.** The four parts that add up to the score, each one
-   shown with its value and where it falls on its own scale.
+1. **Reliability score.** The headline score, the score band, where it sits
+   on a 0 to 100 scale, how close it is to the next band, and the date range
+   it covers.
+2. **Why this score.** The reasons behind the score, sorted into what is
+   helping and what is hurting, with the biggest point values first.
 3. **Monthly Cashflow.** A chart of money in, money out, and the net result
    for every month the score covers.
-4. **Score Explanation.** The reasons behind the score, sorted into what is
-   helping and what is hurting, each written in plain words.
+4. **Key numbers and score breakdown.** Six key numbers, and the four parts
+   that add up to the score.
 5. **Transaction Explorer.** The full list of transactions used in scoring,
    with search, filters for category and for money in or out, sorting, and
    smooth scrolling even with thousands of rows.
@@ -83,7 +83,7 @@ Each folder under `src` has one job.
 | `src/domain`     | Small helper functions with no link to React or the network: money formatting, date maths, the scoring helpers, the merchant category names.                                                                                    |
 | `src/data`       | The link between the backend and the screens: the parts that fetch and cache backend data, and the shared transaction data that live updates are combined into.                                                                 |
 | `src/features`   | One folder per dashboard feature: overview, breakdown, cashflow, explanation, transactions. Each folder also holds the logic only that feature needs: the cashflow card's monthly totals, the explorer's filtering and sorting. |
-| `src/routes`     | The page frame: the sidebar, the top bar, the user picker, and the dashboard that arranges the feature cards.                                                                                                                   |
+| `src/routes`     | The page frame: the top bar, the user picker, the date picker, and the dashboard that arranges the feature cards.                                                                                                               |
 | `src/ui`         | Small building blocks reused across features: the card, the loading placeholder, the empty state, the error state, and the error catcher.                                                                                       |
 | `src/config.ts`  | Every number worth adjusting in one place: page sizes, retry counts, the scoring window length, and the scores where each band starts.                                                                                          |
 | `src/theme.ts`   | Every colour in one place. Both the styling system and the chart read from it.                                                                                                                                                  |
@@ -178,7 +178,7 @@ request fails, and an empty state if there is genuinely nothing to show.
 
 ## Testing
 
-There are 367 tests. They run with `yarn test`.
+There are 380 tests. They run with `yarn test`.
 
 For the helper functions (the API client, the date and money and scoring
 helpers, the functions that prepare the data) the test was written before the
@@ -213,7 +213,7 @@ again. The app recognises them by their ids and ignores the repeats, so you
 will see the rows change once. Events dated outside the scoring window are
 ignored, so with an older `from` date nothing changes.
 
-Pick a user from the sidebar and look at:
+Pick a user from the top bar and look at:
 
 - **The Live badge**, at the top right of the Transactions card. A green dot
   and the word "Live" mean the stream is connected.
@@ -275,7 +275,7 @@ assistant carrying them out under close review.
 Two examples of that review shaping the result: Claude's first comments were
 rewritten several times because they used jargon a reader would have to look
 up, and several backend problems (the way pages of data are requested, a
-field that can be empty, the score gauge colour bands) were caught by checking
+field that can be empty, the score band cut-offs) were caught by checking
 against the live backend and the API specification rather than trusting the
 first build.
 

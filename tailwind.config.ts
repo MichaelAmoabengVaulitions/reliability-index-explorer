@@ -11,7 +11,7 @@ const config: Config = {
     extend: {
       colors: {
         brand: colors.brand,
-        sidebar: colors.sidebar,
+        topbar: colors.topbar,
         positive: colors.positive,
         warning: colors.warning,
         negative: colors.negative,

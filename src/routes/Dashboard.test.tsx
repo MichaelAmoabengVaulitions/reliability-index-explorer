@@ -10,12 +10,13 @@ describe('Dashboard', () => {
     renderWithProviders(<Dashboard />, SAMPLE_DASHBOARD_ROUTE);
     await waitFor(
       () => {
-        expect(screen.getByRole('heading', { name: 'Reliability Overview' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Reliability score' })).toBeInTheDocument();
       },
       { timeout: 4000 },
     );
+    expect(screen.getByRole('heading', { name: 'Why this score' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Key numbers' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Monthly Cashflow' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Transactions' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Score Explanation' })).toBeInTheDocument();
   });
 });

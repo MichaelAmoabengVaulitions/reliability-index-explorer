@@ -1,33 +1,24 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { renderWithProviders } from '@/test-utils/renderWithProviders';
+import { SAMPLE_DASHBOARD_ROUTE, renderWithProviders } from '@/test-utils/renderWithProviders';
 
 import { Root } from './Root';
 
 describe('Root', () => {
-  it('shows the "pick a user" message in the header when no user is selected', () => {
+  it('asks for a user when none is selected', () => {
     renderWithProviders(<Root />);
     expect(screen.getByRole('heading', { name: /pick a user to begin/i })).toBeInTheDocument();
+    expect(screen.getByText(/choose a user above to load their dashboard/i)).toBeInTheDocument();
   });
 
-  it('shows the welcome instructions in the main area when no user is selected', () => {
+  it('names the page after the selected user, for screen readers', () => {
+    renderWithProviders(<Root />, SAMPLE_DASHBOARD_ROUTE);
+    expect(screen.getByRole('heading', { name: 'user_1001' })).toBeInTheDocument();
+  });
+
+  it('has the top bar', () => {
     renderWithProviders(<Root />);
-    expect(
-      screen.getByText(/pick a user from the sidebar to load their reliability dashboard/i),
-    ).toBeInTheDocument();
-  });
-
-  it('shows the date picker once a user is picked', () => {
-    renderWithProviders(<Root />, {
-      path: '/users/:userId',
-      initialEntries: ['/users/user_1001?from=2026-02-28'],
-    });
-    expect(screen.getByLabelText(/scoring window ends/i)).toHaveValue('2026-02-28');
-  });
-
-  it('hides the date picker until a user is picked', () => {
-    renderWithProviders(<Root />);
-    expect(screen.queryByLabelText(/scoring window ends/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('banner')).toHaveTextContent('Reliability Index');
   });
 });

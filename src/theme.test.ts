@@ -36,9 +36,9 @@ describe('text colours', () => {
     ['warning chip', colors.warning.strong, colors.warning.soft],
     ['negative chip', colors.negative.strong, colors.negative.soft],
     ['error box', colors.negative.strong, colors.negative.faint],
-    ['muted sidebar text', colors.sidebar.muted, colors.sidebar.DEFAULT],
-    ['muted text on the sidebar dropdown', colors.sidebar.muted, colors.sidebar.hover],
-    ['error text on the sidebar', colors.negative.onDark, colors.sidebar.DEFAULT],
+    ['muted top bar text', colors.topbar.muted, colors.topbar.DEFAULT],
+    ['muted text on the top bar dropdown', colors.topbar.muted, colors.topbar.hover],
+    ['error text on the top bar', colors.negative.onDark, colors.topbar.DEFAULT],
     ['links', colors.brand[600], WHITE],
   ])('%s is readable', (_name, text, background) => {
     expect(contrast(text, background)).toBeGreaterThanOrEqual(MINIMUM_TEXT_CONTRAST);

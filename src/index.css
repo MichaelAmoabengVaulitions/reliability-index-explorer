@@ -35,8 +35,8 @@
     @apply border-brand-500;
     box-shadow: none;
   }
-  aside :focus-visible,
-  aside select:focus-visible {
+  .on-dark :focus-visible,
+  .on-dark select:focus-visible {
     @apply outline-white;
   }
 }
