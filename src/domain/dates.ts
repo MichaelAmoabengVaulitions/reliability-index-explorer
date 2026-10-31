@@ -22,6 +22,16 @@ export function formatMonth(date: Date): string {
   }).format(date);
 }
 
+// Formats a YYYY-MM-DD date for reading, for example "28 Aug 2026".
+export function formatDate(yyyyMmDd: string): string {
+  return new Intl.DateTimeFormat(config.dateLocale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(parseISODate(yyyyMmDd));
+}
+
 export function monthKey(date: Date): string {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');

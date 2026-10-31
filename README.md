@@ -178,7 +178,7 @@ request fails, and an empty state if there is genuinely nothing to show.
 
 ## Testing
 
-There are 346 tests. They run with `yarn test`.
+There are 366 tests. They run with `yarn test`.
 
 For the helper functions (the API client, the date and money and scoring
 helpers, the functions that prepare the data) the test was written before the

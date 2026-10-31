@@ -25,14 +25,10 @@ export function UserPicker() {
     return (
       <div
         role="alert"
-        className="flex items-center justify-between gap-2 px-3 text-sm text-red-300"
+        className="flex items-center justify-between gap-2 px-3 text-sm text-negative-onDark"
       >
         Could not load users
-        <button
-          type="button"
-          onClick={() => void refetch()}
-          className="rounded underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-        >
+        <button type="button" onClick={() => void refetch()} className="rounded underline">
           Try again
         </button>
       </div>
@@ -46,7 +42,7 @@ export function UserPicker() {
         <select
           value={currentUserId ?? ''}
           onChange={(event) => openUser(event.target.value)}
-          className="block w-full appearance-none rounded-md border border-sidebar-border bg-sidebar-hover px-3 py-2 pr-9 text-sm text-white shadow-sm focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+          className="block w-full appearance-none rounded-md border border-sidebar-border bg-sidebar-hover px-3 py-2 pr-9 text-sm text-white shadow-sm"
         >
           <option value="" disabled>
             Choose a user…

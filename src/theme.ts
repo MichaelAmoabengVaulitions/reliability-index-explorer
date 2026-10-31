@@ -8,8 +8,7 @@
  */
 export const colors = {
   /*
-   * The sidebar and the main accent colours: a deep navy, so the dashboard
-   * reads as a serious analyst tool rather than a marketing site.
+   * The main accent colour for buttons, links and the focus ring.
    */
   brand: {
     50: '#eef2ff',
@@ -18,27 +17,49 @@ export const colors = {
     600: '#4338ca',
     700: '#3730a3',
   },
+  // A deep navy, so the dashboard reads as an analyst tool rather than a marketing site.
   sidebar: {
     DEFAULT: '#0f172a',
     hover: '#1e293b',
     border: '#1e293b',
     text: '#cbd5e1',
-    muted: '#64748b',
+    muted: '#94a3b8',
     active: '#4f46e5',
   },
   /*
-   * Score band colours, used by the band chip, the gauge arc, and any
-   * low/medium/high indicator.
+   * Colours for good, middling and bad news. The plain shade is for text on
+   * white, `strong` is for text on `soft`, and `dot` is for small marks.
+   */
+  positive: {
+    DEFAULT: '#047857',
+    strong: '#065f46',
+    soft: '#d1fae5',
+    dot: '#10b981',
+  },
+  warning: {
+    DEFAULT: '#b45309',
+    strong: '#78350f',
+    soft: '#fef3c7',
+    dot: '#f59e0b',
+  },
+  negative: {
+    DEFAULT: '#b91c1c',
+    strong: '#7f1d1d',
+    soft: '#fee2e2',
+    faint: '#fef2f2',
+    border: '#fca5a5',
+    onDark: '#fca5a5',
+  },
+  /*
+   * Bright colours for shapes only: the gauge arc and the chart bars. They are
+   * too light to read as text on white.
    */
   band: {
     low: '#ef4444',
     medium: '#f59e0b',
     high: '#10b981',
   },
-  /*
-   * Money-in and money-out colours. On purpose the same green and red as the
-   * high and low score bands, so "green is good" reads the same everywhere.
-   */
+  // The same green and red as the score bands, so "green is good" reads the same everywhere.
   money: {
     inflow: '#10b981',
     outflow: '#ef4444',

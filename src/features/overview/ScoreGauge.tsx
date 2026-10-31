@@ -39,9 +39,9 @@ const SEGMENTS = [
 ];
 
 const BAND_TEXT_COLOR: Record<ReliabilityResponse['score_band'], string> = {
-  LOW: 'text-band-low',
-  MEDIUM: 'text-band-medium',
-  HIGH: 'text-band-high',
+  LOW: 'text-negative',
+  MEDIUM: 'text-warning',
+  HIGH: 'text-positive',
 };
 
 /**

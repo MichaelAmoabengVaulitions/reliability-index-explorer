@@ -25,11 +25,11 @@ const LOADING_ROW_COUNT = 8;
 const STREAM_BADGE_BY_STATUS: Record<StreamStatus, { dot: string; text: string; label: string }> = {
   idle: { dot: 'bg-slate-300', text: 'text-slate-500', label: 'Live updates idle' },
   connecting: {
-    dot: 'bg-amber-400 animate-pulse',
-    text: 'text-amber-600',
+    dot: 'bg-warning-dot animate-pulse',
+    text: 'text-warning',
     label: 'Connecting to live updates',
   },
-  open: { dot: 'bg-emerald-500 animate-pulse', text: 'text-emerald-600', label: 'Live' },
+  open: { dot: 'bg-positive-dot animate-pulse', text: 'text-positive', label: 'Live' },
 };
 
 function LiveBadge({ status }: { status: StreamStatus }) {
@@ -140,7 +140,7 @@ export function Explorer({ stream }: { stream: StreamState }) {
             Showing <span className="font-semibold text-slate-700">{visibleCount}</span> of{' '}
             <span className="font-semibold text-slate-700">{totalCount}</span> transactions
             {stream.eventCount > 0 && (
-              <span className="ml-2 font-semibold text-emerald-700">
+              <span className="ml-2 font-semibold text-positive">
                 · {stream.eventCount} live {stream.eventCount === 1 ? 'update' : 'updates'}
               </span>
             )}

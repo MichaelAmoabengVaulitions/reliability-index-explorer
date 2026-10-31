@@ -49,4 +49,6 @@ export const config = {
     highBandMin: 75,
   },
   locale: 'en-US',
+  // Day before month, so a date reads as "28 Aug 2026".
+  dateLocale: 'en-GB',
 } as const;

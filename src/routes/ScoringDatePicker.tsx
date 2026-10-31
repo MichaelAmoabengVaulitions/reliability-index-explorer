@@ -40,7 +40,7 @@ export function ScoringDatePicker() {
         max={todayAsIsoDate()}
         onChange={(event) => changeDate(event.target.value)}
         onBlur={() => setTypedDate(null)}
-        className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+        className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"
       />
     </label>
   );
